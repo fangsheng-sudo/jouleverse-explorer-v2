@@ -151,9 +151,36 @@
             <span class="decision-rule">({{ p.id <= 2 ? 'V1 规则' : 'V2 规则' }}：支持率&gt;2/3 {{ p.id <= 2 ? '且代表率&gt;1/2' : '且代表率&gt;0.4' }})</span>
           </div>
 
-          <!-- 投票操作（I2 迭代启用） -->
+          <!-- 投票操作 -->
           <div v-if="p.status === 'active' && !p.disabled" class="vote-row">
-            <n-tag size="small" type="warning" round>投票功能将在下一迭代开放</n-tag>
+            <template v-if="!votedProposals.has(p.id)">
+              <JvActionButton
+                type="success"
+                size="small"
+                :loading="voteState(p.id).loading && voteState(p.id).direction === 'for'"
+                :disabled="voteState(p.id).loading"
+                @click="handleVote(p, true)"
+              >
+                投赞成票
+              </JvActionButton>
+              <JvActionButton
+                type="error"
+                size="small"
+                :loading="voteState(p.id).loading && voteState(p.id).direction === 'against'"
+                :disabled="voteState(p.id).loading"
+                @click="handleVote(p, false)"
+              >
+                投反对票
+              </JvActionButton>
+            </template>
+            <JvStatusTag v-else status="tx-success" label="已投票" />
+            <JvHashText
+              v-if="voteState(p.id).txHash"
+              :value="voteState(p.id).txHash ?? ''"
+              type="tx"
+              :truncate="10"
+            />
+            <p v-if="voteState(p.id).error" class="vote-error">{{ voteState(p.id).error }}</p>
           </div>
         </div>
       </div>
@@ -162,13 +189,14 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useWalletStore } from '../stores/wallet'
-import { useJNSVote } from '../composables/useJNSVote'
-import { JvLoading, JvPageState, JvHashText, JvStatusTag } from '../design-system'
+import { useJNSVote, mapVoteError, SwitchChainError } from '../composables/useJNSVote'
+import type { JNSVoteProposal } from '../composables/useJNSVote'
+import { JvLoading, JvPageState, JvHashText, JvStatusTag, JvActionButton } from '../design-system'
 
 const walletStore = useWalletStore()
-const { proposals, totalProposals, currentBlock, isLoading, loadError, eligibility, votedProposals, loadProposals, checkEligibility, checkVoted, formatCountdown } = useJNSVote()
+const { proposals, totalProposals, currentBlock, isLoading, loadError, eligibility, votedProposals, loadProposals, checkEligibility, checkVoted, vote, formatCountdown } = useJNSVote()
 
 const rpcOk = ref(true)
 
@@ -198,6 +226,50 @@ function shortCid(link: string): string {
   if (!link) return ''
   const clean = link.startsWith('ipfs://') ? link.slice(7) : link
   return clean.length > 40 ? clean.slice(0, 20) + '…' + clean.slice(-16) : clean
+}
+
+// ── 投票状态（按提案 id 隔离，避免一个 loading 挡住全部提案）──
+interface VoteState {
+  loading: boolean
+  direction: 'for' | 'against' | null
+  txHash: string | null
+  error: string | null
+}
+
+const voteStates = reactive(new Map<number, VoteState>())
+
+function voteState(id: number): VoteState {
+  let state = voteStates.get(id)
+  if (!state) {
+    state = reactive({ loading: false, direction: null, txHash: null, error: null })
+    voteStates.set(id, state)
+  }
+  return state
+}
+
+async function handleVote(proposal: JNSVoteProposal, isFor: boolean) {
+  if (!walletStore.address) return
+  const state = voteState(proposal.id)
+  state.loading = true
+  state.direction = isFor ? 'for' : 'against'
+  state.error = null
+  state.txHash = null
+  try {
+    const hash = await vote(proposal.id, isFor)
+    state.txHash = hash
+    // 投票成功：静默刷新票数与已投票状态（不触发全屏 loading）
+    await loadProposals({ silent: true })
+    if (walletStore.address) {
+      await checkVoted(walletStore.address, proposals.value.map((p) => p.id))
+    }
+  } catch (error) {
+    state.error = error instanceof SwitchChainError
+      ? '请先在钱包中手动切换到 Jouleverse 网络（Chain ID: 3666，RPC: https://rpc.jnsdao.com:8503）'
+      : mapVoteError(error)
+  } finally {
+    state.loading = false
+    state.direction = null
+  }
 }
 
 onMounted(async () => {
@@ -304,5 +376,18 @@ onMounted(async () => {
 .decision.fail { color: #d03050; }
 .decision-rule { font-size: 12px; color: var(--jv-text-secondary, #888); }
 
-.vote-row { padding-top: 4px; }
+.vote-row {
+  padding-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.vote-error {
+  color: var(--jv-error);
+  font-size: 12px;
+  margin: 0;
+  flex-basis: 100%;
+}
 </style>
