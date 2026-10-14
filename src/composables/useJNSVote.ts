@@ -2,7 +2,7 @@
 // v1 参考: docs/reference/jnsvote/jnsVoteInfoController.js
 
 import { ref } from 'vue'
-import { writeContract, switchChain, waitForTransactionReceipt } from 'wagmi/actions'
+import { writeContract, switchChain, waitForTransactionReceipt, simulateContract } from 'wagmi/actions'
 import { publicClient } from '../config/client'
 import { jouleverseChain } from '../config/chain'
 import { config as wagmiConfig } from '../stores/wallet'
@@ -284,10 +284,34 @@ export function useJNSVote() {
           args: [BigInt(proposalId)],
         })
 
-    // 3. 等待链上确认（交易被 revert 时抛出）
-    await waitForTransactionReceipt(wagmiConfig, { hash })
+    // 3. 等待链上确认
+    const receipt = await waitForTransactionReceipt(wagmiConfig, { hash })
+
+    // 4. 校验 receipt.status：viem 不会在 revert 时抛错，需显式检查
+    //    （模拟与上链之间状态可能变化，如并发标签页重复投票 → already voted）
+    if (receipt.status === 'reverted') {
+      // 交易已挖出但被 revert：重放同参数模拟以拿到精确 require reason
+      throw await resolveRevertReason(proposalId, isFor)
+    }
 
     return hash
+  }
+
+  // revert 后重放 simulate 以还原合约 require reason（供 mapVoteError 映射）
+  async function resolveRevertReason(proposalId: number, isFor: boolean): Promise<Error> {
+    try {
+      await simulateContract(wagmiConfig, {
+        address: JNSVOTE_ADDRESS,
+        abi: jnsVoteABI,
+        functionName: isFor ? 'voteFor' : 'voteAgainst',
+        args: [BigInt(proposalId)],
+      })
+      // 模拟通过（说明 revert 由并发时序造成，现已无碍）→ 抛通用错误
+      return new Error('交易已回滚')
+    } catch (e) {
+      // 模拟失败：e 携带合约 revert reason，交给 mapVoteError 映射
+      return e instanceof Error ? e : new Error(String(e))
+    }
   }
 
   // 初始化：加载提案 + （可选）资格/已投检查

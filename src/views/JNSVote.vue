@@ -153,7 +153,10 @@
 
           <!-- 投票操作 -->
           <div v-if="p.status === 'active' && !p.disabled" class="vote-row">
-            <template v-if="!votedProposals.has(p.id)">
+            <template v-if="!walletStore.isConnected">
+              <span class="vote-connect-hint">🔗 连接钱包后可投票</span>
+            </template>
+            <template v-else-if="!votedProposals.has(p.id)">
               <JvActionButton
                 type="success"
                 size="small"
@@ -389,5 +392,10 @@ onMounted(async () => {
   font-size: 12px;
   margin: 0;
   flex-basis: 100%;
+}
+
+.vote-connect-hint {
+  color: var(--jv-text-secondary, #888);
+  font-size: 13px;
 }
 </style>
