@@ -9,6 +9,7 @@ import { config as wagmiConfig } from '../stores/wallet'
 import { JNSVOTE_ADDRESS, JTI_ADDRESS, jnsVoteABI, jtiABI } from '../contracts/jnsvote'
 import { JNS_ADDRESS, jnsABI } from '../contracts/jns'
 import { jnsvoteDecision, approvalRate, representativeRate } from '../utils/jnsvote-decision'
+import { safeErrorMessage } from '../utils/error'
 
 const BLOCK_TIME_SEC = 15 // Jouleverse 平均出块时间（v1 用 15s 估算倒计时）
 
@@ -20,35 +21,26 @@ export class SwitchChainError extends Error {
   }
 }
 
-// 从任意错误对象安全提取可读信息（兼容 Error / string / viem 错误结构）
-function safeErrorMessage(error: unknown): string {
-  if (error === null || error === undefined) return '未知错误'
-  if (typeof error === 'string') return error
-  if (typeof error === 'object') {
-    const obj = error as Record<string, unknown>
-    if (typeof obj.message === 'string') return obj.message
-    if (typeof obj.shortMessage === 'string') return obj.shortMessage
-    if (typeof obj.toString === 'function') {
-      try { return String(obj.toString()) } catch { /* 忽略 */ }
-    }
-  }
-  return String(error)
-}
-
 // 将合约 revert reason / 钱包错误映射为友好中文提示
 // require 文案见 docs/reference/jnsvote/jns_vote.sol 中 vote() 的五条约束
 export function mapVoteError(error: unknown): string {
+  // 优先取 viem 的 shortMessage（干净文案），同时兼顾 message（含 reason）与 reason 字段
   const msg = safeErrorMessage(error)
+  const raw = String(
+    (error as { shortMessage?: string } | null)?.shortMessage ??
+    (error as { reason?: string } | null)?.reason ??
+    msg,
+  )
   // 用户拒绝签名（MetaMask 4001 / wagmi UserRejectedRequestError）
-  if (/user rejected|denied|rejected the request|cancelled|4001/i.test(msg)) {
+  if (/user rejected|denied|rejected the request|cancelled|4001/i.test(msg + ' ' + raw)) {
     return '已取消投票'
   }
-  if (/not yet started/i.test(msg)) return '提案尚未开始投票'
-  if (/already ended/i.test(msg)) return '提案投票已结束'
-  if (/already voted/i.test(msg)) return '您已投过票，无法重复投票'
-  if (/not a qualified voter|without having jti/i.test(msg)) return '您未持有 JTI，无投票资格'
-  if (/not having a jns/i.test(msg)) return '您未持有 JNS 域名，无投票资格'
-  // 兜底：返回原始信息（可能含技术细节，但比吞掉错误更利于排查）
+  if (/not yet started/i.test(raw)) return '提案尚未开始投票'
+  if (/already ended/i.test(raw)) return '提案投票已结束'
+  if (/already voted/i.test(raw)) return '您已投过票，无法重复投票'
+  if (/not a qualified voter|without having jti/i.test(raw)) return '您未持有 JTI，无投票资格'
+  if (/not having a jns/i.test(raw)) return '您未持有 JNS 域名，无投票资格'
+  // 兜底：返回干净信息（可能含技术细节，但比吞掉错误更利于排查）
   return msg
 }
 

@@ -81,6 +81,7 @@ import { useWalletStore } from '../stores/wallet'
 import { WJ_ADDRESS, wjABI } from '../contracts/wj'
 import { jouleverseChain } from '../config/chain'
 import { JvPageState, JvActionButton } from '../design-system'
+import { safeErrorMessage } from '../utils/error'
 
 interface Props {
   address: string
@@ -98,18 +99,6 @@ const operationError = ref<string | null>(null)
 const operationSuccess = ref<string | null>(null)
 const withdrawForm = ref({ to: '', amount: '' })
 const transferForm = ref({ to: '', amount: '' })
-
-const safeErrorMessage = (error: unknown): string => {
-  try {
-    if (error === null || error === undefined) return 'Unknown error'
-    if (typeof error === 'string') return error
-    if (typeof error === 'object') {
-      if ('message' in error && typeof (error as any).message === 'string') return (error as any).message
-      if ('toString' in error) { try { return (error as any).toString() } catch { return 'Could not convert error to string' } }
-    }
-    return String(error)
-  } catch { return 'Could not parse error' }
-}
 
 const handleAmountInput = (type: 'withdraw' | 'transfer', event: Event) => {
   const target = event.target as HTMLInputElement

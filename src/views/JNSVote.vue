@@ -161,7 +161,7 @@
                 type="success"
                 size="small"
                 :loading="voteState(p.id).loading && voteState(p.id).direction === 'for'"
-                :disabled="voteState(p.id).loading"
+                :disabled="voteState(p.id).loading || !isEligible"
                 @click="handleVote(p, true)"
               >
                 投赞成票
@@ -170,11 +170,12 @@
                 type="error"
                 size="small"
                 :loading="voteState(p.id).loading && voteState(p.id).direction === 'against'"
-                :disabled="voteState(p.id).loading"
+                :disabled="voteState(p.id).loading || !isEligible"
                 @click="handleVote(p, false)"
               >
                 投反对票
               </JvActionButton>
+              <span v-if="!isEligible" class="vote-connect-hint">无投票资格（需 JTI + JNS 持仓）</span>
             </template>
             <JvStatusTag v-else status="tx-success" label="已投票" />
             <JvHashText
@@ -192,8 +193,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { useWalletStore } from '../stores/wallet'
+import { onMounted, onUnmounted, reactive, ref, computed } from 'vue'
+import { useWalletStore, config as wagmiConfig } from '../stores/wallet'
+import { watchAccount } from '@wagmi/core'
 import { useJNSVote, mapVoteError, SwitchChainError } from '../composables/useJNSVote'
 import type { JNSVoteProposal } from '../composables/useJNSVote'
 import { JvLoading, JvPageState, JvHashText, JvStatusTag, JvActionButton } from '../design-system'
@@ -202,6 +204,9 @@ const walletStore = useWalletStore()
 const { proposals, totalProposals, currentBlock, isLoading, loadError, eligibility, votedProposals, loadProposals, checkEligibility, checkVoted, vote, formatCountdown } = useJNSVote()
 
 const rpcOk = ref(true)
+
+// 是否具备投票资格（已连接且持有 JTI + JNS）
+const isEligible = computed(() => eligibility.value?.hasJTI === true && eligibility.value?.hasJNS === true)
 
 async function refresh() {
   rpcOk.value = true
@@ -288,6 +293,22 @@ onMounted(async () => {
   } catch {
     rpcOk.value = false
   }
+
+  // 账户切换监听：MetaMask 切换账户后刷新资格与已投状态（合约会兜底拦截，仅体验优化）
+  const unwatch = watchAccount(wagmiConfig, {
+    onChange(connection) {
+      const addr = connection.address
+      if (addr) {
+        checkEligibility(addr)
+        checkVoted(addr, proposals.value.map((p) => p.id))
+      } else {
+        // 断开连接：清空资格与已投状态
+        eligibility.value = null
+        votedProposals.value = new Set()
+      }
+    },
+  })
+  onUnmounted(unwatch)
 })
 </script>
 

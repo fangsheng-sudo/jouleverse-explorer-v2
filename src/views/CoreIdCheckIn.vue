@@ -62,6 +62,7 @@ import { JVCORE_ADDRESS, jvcoreABI } from '../contracts/jvcore'
 import { writeContract, switchChain, waitForTransactionReceipt } from 'wagmi/actions'
 import { config as wagmiConfig } from '../stores/wallet'
 import { JvPageState, JvStatusTag, JvActionButton } from '../design-system'
+import { safeErrorMessage } from '../utils/error'
 import type { NFTMetadata } from '../types/coreid'
 
 interface Props {
@@ -81,18 +82,6 @@ const now = ref(Math.floor(Date.now() / 1000))
 const loadingCheckIn = ref(false)
 const checkInError = ref<string | null>(null)
 const checkInStatus = ref<string | null>(null)
-
-const safeErrorMessage = (error: unknown): string => {
-  try {
-    if (error === null || error === undefined) return 'Unknown error'
-    if (typeof error === 'string') return error
-    if (typeof error === 'object') {
-      if ('message' in error && typeof (error as any).message === 'string') return (error as any).message
-      if ('toString' in error) { try { return (error as any).toString() } catch { return 'Could not convert error to string' } }
-    }
-    return String(error)
-  } catch { return 'Could not parse error' }
-}
 
 const lastCheckInTime = computed(() => props.metadata?.lastCheckInTime ?? 0)
 const isLive = computed(() => props.metadata?.liveness ?? false)
