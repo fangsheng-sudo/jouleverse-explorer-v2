@@ -175,7 +175,7 @@
               >
                 投反对票
               </JvActionButton>
-              <span v-if="!isEligible" class="vote-connect-hint">无投票资格（需 JTI + JNS 持仓）</span>
+              <span v-if="!isEligible && eligibilityLoaded" class="vote-connect-hint">无投票资格（需 JTI + JNS 持仓）</span>
             </template>
             <JvStatusTag v-else status="tx-success" label="已投票" />
             <JvHashText
@@ -207,6 +207,12 @@ const rpcOk = ref(true)
 
 // 是否具备投票资格（已连接且持有 JTI + JNS）
 const isEligible = computed(() => eligibility.value?.hasJTI === true && eligibility.value?.hasJNS === true)
+// 资格是否已加载完成（eligibility 为 null 表示仍在异步加载中）
+const eligibilityLoaded = computed(() => eligibility.value !== null)
+
+// 账户切换监听注销函数（在 setup 顶层同步注册，避免 await 后 currentInstance 失效）
+let unwatchAccount: (() => void) | undefined
+onUnmounted(() => unwatchAccount?.())
 
 async function refresh() {
   rpcOk.value = true
@@ -295,7 +301,7 @@ onMounted(async () => {
   }
 
   // 账户切换监听：MetaMask 切换账户后刷新资格与已投状态（合约会兜底拦截，仅体验优化）
-  const unwatch = watchAccount(wagmiConfig, {
+  unwatchAccount = watchAccount(wagmiConfig, {
     onChange(connection) {
       const addr = connection.address
       if (addr) {
@@ -308,7 +314,6 @@ onMounted(async () => {
       }
     },
   })
-  onUnmounted(unwatch)
 })
 </script>
 
