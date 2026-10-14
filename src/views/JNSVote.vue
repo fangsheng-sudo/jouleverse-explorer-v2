@@ -215,8 +215,8 @@ let unwatchAccount: (() => void) | undefined
 onUnmounted(() => unwatchAccount?.())
 
 async function refresh() {
-  rpcOk.value = true
   await loadProposals()
+  rpcOk.value = loadError.value === null
   if (walletStore.address) {
     await checkEligibility(walletStore.address)
     await checkVoted(walletStore.address, proposals.value.map((p) => p.id))
@@ -287,24 +287,24 @@ async function handleVote(proposal: JNSVoteProposal, isFor: boolean) {
 }
 
 onMounted(async () => {
-  // 并行：钱包恢复 + 提案加载（不互相阻塞，避免无钱包时等 5s）
-  walletStore.restoreConnection().then(() => {
-    if (walletStore.address) {
-      checkEligibility(walletStore.address)
-      checkVoted(walletStore.address, proposals.value.map((p) => p.id))
-    }
+  // 提案加载先启动，用变量持有 promise；钱包恢复回调与账户切换监听均等待它，
+  // 避免「钱包恢复早于提案加载」时 checkVoted 拿到空提案列表的竞态
+  const loadPromise = loadProposals()
+
+  // 钱包恢复 + 资格/已投检查（等待提案加载完成后执行）
+  walletStore.restoreConnection().then(async () => {
+    if (!walletStore.address) return
+    await loadPromise
+    await checkEligibility(walletStore.address)
+    await checkVoted(walletStore.address, proposals.value.map((p) => p.id))
   })
-  try {
-    await loadProposals()
-  } catch {
-    rpcOk.value = false
-  }
 
   // 账户切换监听：MetaMask 切换账户后刷新资格与已投状态（合约会兜底拦截，仅体验优化）
   unwatchAccount = watchAccount(wagmiConfig, {
-    onChange(connection) {
+    async onChange(connection) {
       const addr = connection.address
       if (addr) {
+        await loadPromise
         checkEligibility(addr)
         checkVoted(addr, proposals.value.map((p) => p.id))
       } else {
@@ -314,6 +314,10 @@ onMounted(async () => {
       }
     },
   })
+
+  // 等待首次加载完成，联动 RPC 连接状态显示（loadProposals 内部已吞错，需用 loadError 判断）
+  await loadPromise
+  rpcOk.value = loadError.value === null
 })
 </script>
 

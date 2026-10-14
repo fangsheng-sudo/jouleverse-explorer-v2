@@ -220,19 +220,28 @@ export function useJNSVote() {
 
   // 检查某地址在哪些提案已投票（multicall 并行查 _jti_voted）
   async function checkVoted(address: string, proposalIds: number[]) {
-    const calls = proposalIds.map((id) => ({
-      address: JNSVOTE_ADDRESS as `0x${string}`,
-      abi: jnsVoteABI,
-      functionName: '_jti_voted' as const,
-      args: [BigInt(id), address as `0x${string}`] as const,
-    }))
-    const results = await publicClient.multicall({ contracts: calls, allowFailure: true })
     const voted = new Set<number>()
-    results.forEach((res, idx) => {
-      if (res.result && (res.result as readonly unknown[])[0] !== 0n) {
-        voted.add(proposalIds[idx])
-      }
-    })
+    // 提案列表为空时跳过（例如钱包恢复早于提案加载的竞态窗口）
+    if (proposalIds.length === 0) {
+      votedProposals.value = voted
+      return voted
+    }
+    try {
+      const calls = proposalIds.map((id) => ({
+        address: JNSVOTE_ADDRESS as `0x${string}`,
+        abi: jnsVoteABI,
+        functionName: '_jti_voted' as const,
+        args: [BigInt(id), address as `0x${string}`] as const,
+      }))
+      const results = await publicClient.multicall({ contracts: calls, allowFailure: true })
+      results.forEach((res, idx) => {
+        if (res.result && (res.result as readonly unknown[])[0] !== 0n) {
+          voted.add(proposalIds[idx])
+        }
+      })
+    } catch {
+      // RPC 失败：保持空集合，不阻塞页面
+    }
     votedProposals.value = voted
     return voted
   }
