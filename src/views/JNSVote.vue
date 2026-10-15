@@ -15,6 +15,9 @@
         >
           {{ rpcOk ? '✅ 已连接 Jouleverse' : '❌ RPC 异常' }}
         </n-tag>
+        <n-tag v-if="!wsLive" size="small" type="warning" round>
+          ⚠️ 实时更新已断开
+        </n-tag>
         <n-tag v-if="totalProposals > 0" size="small" type="info" round>
           提案总数：{{ totalProposals }}
         </n-tag>
@@ -48,9 +51,51 @@
       </div>
     </div>
 
+    <!-- 徽章画廊（已连接） -->
+    <div v-if="walletStore.isConnected" class="badge-gallery">
+      <div class="badge-gallery-header">
+        <span class="badge-gallery-title">🏅 投票徽章</span>
+        <span v-if="badgesTotal > 0" class="badge-gallery-count">共 {{ badgesTotal }} 枚 · 🔒 不可转移</span>
+      </div>
+
+      <!-- 加载中（首批） -->
+      <div v-if="badgesLoading && badges.length === 0" class="badge-loading">
+        <JvLoading label="正在读取徽章..." />
+      </div>
+
+      <!-- 空态（仅首次加载完成后才显示，避免加载前闪现「暂无徽章」） -->
+      <div v-else-if="badgesLoaded && badgesTotal === 0 && !badgesLoading && !badgesError" class="badge-empty">
+        暂无徽章，参与投票后自动铸造
+      </div>
+
+      <!-- 徽章列表 -->
+      <template v-else>
+        <div class="badge-list">
+          <div v-for="(b, i) in badges" :key="b.tokenId >= 0 ? b.tokenId : 'fail-' + i" class="badge-item" :title="b.name">
+            <img v-if="b.image" :src="b.image" class="badge-img" :alt="b.name" loading="lazy" />
+            <div v-else class="badge-img badge-img-fallback">🏅</div>
+            <span class="badge-proposal">{{ b.proposal >= 0 ? '#' + b.proposal : '—' }}</span>
+          </div>
+        </div>
+
+        <!-- 加载更多 -->
+        <div v-if="hasMoreBadges" class="badge-more">
+          <n-button size="tiny" quaternary :loading="badgesLoading" @click="loadMoreBadges">
+            加载更多
+          </n-button>
+        </div>
+      </template>
+
+      <!-- 错误（含重试入口） -->
+      <div v-if="badgesError" class="badge-error">
+        <span>{{ badgesError }}</span>
+        <n-button size="tiny" quaternary @click="retryBadges">重试</n-button>
+      </div>
+    </div>
+
     <!-- 加载 / 异常 / 空态 -->
     <div v-if="isLoading" class="loading-wrap">
-      <JvLoading text="正在读取链上提案..." />
+      <JvLoading label="正在读取链上提案..." />
     </div>
     <div v-else-if="loadError" class="error-wrap">
       <JvPageState type="network-error" title="加载失败" :description="loadError">
@@ -196,23 +241,34 @@
 import { onMounted, onUnmounted, reactive, ref, computed } from 'vue'
 import { useWalletStore, config as wagmiConfig } from '../stores/wallet'
 import { watchAccount } from '@wagmi/core'
+import { watchBlockNumber } from 'viem/actions'
+import { wsPublicClient } from '../config/client'
 import { useJNSVote, mapVoteError, SwitchChainError } from '../composables/useJNSVote'
 import type { JNSVoteProposal } from '../composables/useJNSVote'
 import { JvLoading, JvPageState, JvHashText, JvStatusTag, JvActionButton } from '../design-system'
 
 const walletStore = useWalletStore()
-const { proposals, totalProposals, currentBlock, isLoading, loadError, eligibility, votedProposals, loadProposals, checkEligibility, checkVoted, vote, formatCountdown } = useJNSVote()
+const { proposals, totalProposals, currentBlock, isLoading, loadError, eligibility, votedProposals, badges, badgesTotal, badgesLoading, badgesError, badgesLoaded, hasMoreBadges, loadProposals, checkEligibility, checkVoted, loadBadges, clearBadges, vote, formatCountdown } = useJNSVote()
 
 const rpcOk = ref(true)
+// WS 实时订阅是否在线（断线重试耗尽后置 false，提示用户实时更新已暂停）
+const wsLive = ref(true)
 
 // 是否具备投票资格（已连接且持有 JTI + JNS）
 const isEligible = computed(() => eligibility.value?.hasJTI === true && eligibility.value?.hasJNS === true)
 // 资格是否已加载完成（eligibility 为 null 表示仍在异步加载中）
 const eligibilityLoaded = computed(() => eligibility.value !== null)
+// 是否存在需要实时刷新的提案：进行中需刷新票数；待开始需等待翻转成进行中（否则 pending 永不自动转为 active）
+const needsLiveRefresh = computed(() => proposals.value.some((p) => p.status === 'active' || p.status === 'pending'))
 
 // 账户切换监听注销函数（在 setup 顶层同步注册，避免 await 后 currentInstance 失效）
 let unwatchAccount: (() => void) | undefined
-onUnmounted(() => unwatchAccount?.())
+// 区块订阅注销函数（同样顶层同步注册）
+let unwatchBlock: (() => void) | undefined
+onUnmounted(() => {
+  unwatchAccount?.()
+  unwatchBlock?.()
+})
 
 async function refresh() {
   await loadProposals()
@@ -220,6 +276,7 @@ async function refresh() {
   if (walletStore.address) {
     await checkEligibility(walletStore.address)
     await checkVoted(walletStore.address, proposals.value.map((p) => p.id))
+    await loadBadges(walletStore.address, { reset: true })
   }
 }
 
@@ -229,10 +286,23 @@ async function handleConnect() {
     if (walletStore.address) {
       await checkEligibility(walletStore.address)
       await checkVoted(walletStore.address, proposals.value.map((p) => p.id))
+      await loadBadges(walletStore.address, { reset: true })
     }
   } catch {
     // 用户取消或失败，保持现状
   }
+}
+
+// 徽章分批加载更多
+function loadMoreBadges() {
+  if (walletStore.address && hasMoreBadges.value && !badgesLoading.value) {
+    loadBadges(walletStore.address)
+  }
+}
+
+// 徽章加载失败重试
+function retryBadges() {
+  if (walletStore.address) loadBadges(walletStore.address, { reset: true })
 }
 
 // 简化 CID 展示
@@ -275,6 +345,8 @@ async function handleVote(proposal: JNSVoteProposal, isFor: boolean) {
     await loadProposals({ silent: true })
     if (walletStore.address) {
       await checkVoted(walletStore.address, proposals.value.map((p) => p.id))
+      // 投票后 mint 了新徽章，刷新徽章画廊
+      await loadBadges(walletStore.address, { reset: true })
     }
   } catch (error) {
     state.error = error instanceof SwitchChainError
@@ -291,12 +363,13 @@ onMounted(async () => {
   // 避免「钱包恢复早于提案加载」时 checkVoted 拿到空提案列表的竞态
   const loadPromise = loadProposals()
 
-  // 钱包恢复 + 资格/已投检查（等待提案加载完成后执行）
+  // 钱包恢复 + 资格/已投/徽章检查（等待提案加载完成后执行）
   walletStore.restoreConnection().then(async () => {
     if (!walletStore.address) return
     await loadPromise
     await checkEligibility(walletStore.address)
     await checkVoted(walletStore.address, proposals.value.map((p) => p.id))
+    await loadBadges(walletStore.address, { reset: true })
   })
 
   // 账户切换监听：MetaMask 切换账户后刷新资格与已投状态（合约会兜底拦截，仅体验优化）
@@ -307,11 +380,32 @@ onMounted(async () => {
         await loadPromise
         checkEligibility(addr)
         checkVoted(addr, proposals.value.map((p) => p.id))
+        loadBadges(addr, { reset: true })
       } else {
-        // 断开连接：清空资格与已投状态
+        // 断开连接：清空资格、已投与徽章状态（避免重连新账户时串数据）
         eligibility.value = null
         votedProposals.value = new Set()
+        clearBadges()
       }
+    },
+  })
+
+  // 实时更新：复用 wsPublicClient + watchBlockNumber，倒计时随区块联动，仅 active 提案时刷新票数
+  unwatchBlock = watchBlockNumber(wsPublicClient, {
+    onBlockNumber(blockNumber) {
+      // 收到新区块说明 WS 已恢复在线
+      wsLive.value = true
+      // 倒计时联动：更新当前区块，倒计时基于 currentBlock 自动重算
+      currentBlock.value = blockNumber
+      // 存在 active/pending 提案时刷新票数与状态翻转；首载失败（曾报错）时借区块推进自愈重试
+      if (needsLiveRefresh.value || loadError.value !== null) {
+        loadProposals({ silent: true, block: blockNumber })
+      }
+    },
+    onError(error) {
+      // WS 断线：静默，保持旧数据，不打断用户；仅置离线标志提示实时更新已暂停
+      wsLive.value = false
+      console.error('[JNSVote] 区块订阅错误:', error)
     },
   })
 
@@ -427,5 +521,63 @@ onMounted(async () => {
 .vote-connect-hint {
   color: var(--jv-text-secondary, #475569);
   font-size: 13px;
+}
+
+/* ── 徽章画廊 ── */
+.badge-gallery {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--jv-bg-surface, #fff);
+  border: 1px solid var(--jv-border, #e5e5e5);
+}
+.badge-gallery-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.badge-gallery-title { font-size: 14px; font-weight: 600; }
+.badge-gallery-count { font-size: 12px; color: var(--jv-text-muted, #64748b); }
+
+.badge-loading, .badge-empty, .badge-error { padding: 8px 0; font-size: 13px; }
+.badge-empty { color: var(--jv-text-muted, #64748b); }
+.badge-error { color: var(--jv-error, #dc2626); display: flex; align-items: center; gap: 8px; }
+
+.badge-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.badge-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.badge-img {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: contain;
+  border: 1px solid var(--jv-border, #e5e5e5);
+  background: var(--jv-bg-subtle, #f1f5f9);
+  /* 动效只用 transform（GPU 加速），不用 layout 属性 */
+  transition: transform var(--jv-duration-fast, 120ms) var(--jv-ease, cubic-bezier(.4,0,.2,1));
+}
+.badge-img:hover { transform: scale(1.08); }
+.badge-img-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+.badge-proposal {
+  font-size: 12px;
+  color: var(--jv-text-secondary, #475569);
+}
+.badge-more {
+  margin-top: 12px;
+  text-align: center;
 }
 </style>
