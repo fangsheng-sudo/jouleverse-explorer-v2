@@ -113,6 +113,7 @@
         :key="p.id"
         class="proposal-card"
         :class="[`status-${p.status}`, { 'is-disabled': p.disabled }]"
+        @click="goProposalDetail(p.id)"
       >
         <div class="proposal-head">
           <div class="proposal-title-row">
@@ -134,6 +135,7 @@
             target="_blank"
             rel="noopener"
             class="proposal-link"
+            @click.stop
           >🔗 {{ shortCid(p.link) }}</a>
         </div>
 
@@ -197,7 +199,7 @@
           </div>
 
           <!-- 投票操作 -->
-          <div v-if="p.status === 'active' && !p.disabled" class="vote-row">
+          <div v-if="p.status === 'active' && !p.disabled" class="vote-row" @click.stop>
             <template v-if="!walletStore.isConnected">
               <span class="vote-connect-hint">🔗 连接钱包后可投票</span>
             </template>
@@ -239,6 +241,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, reactive, ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useWalletStore, config as wagmiConfig } from '../stores/wallet'
 import { watchAccount } from '@wagmi/core'
 import { watchBlockNumber } from 'viem/actions'
@@ -248,6 +251,7 @@ import type { JNSVoteProposal } from '../composables/useJNSVote'
 import { JvLoading, JvPageState, JvHashText, JvStatusTag, JvActionButton } from '../design-system'
 
 const walletStore = useWalletStore()
+const router = useRouter()
 const { proposals, totalProposals, currentBlock, isLoading, loadError, eligibility, votedProposals, badges, badgesTotal, badgesLoading, badgesError, badgesLoaded, hasMoreBadges, loadProposals, checkEligibility, checkVoted, loadBadges, clearBadges, vote, formatCountdown } = useJNSVote()
 
 const rpcOk = ref(true)
@@ -310,6 +314,11 @@ function shortCid(link: string): string {
   if (!link) return ''
   const clean = link.startsWith('ipfs://') ? link.slice(7) : link
   return clean.length > 40 ? clean.slice(0, 20) + '…' + clean.slice(-16) : clean
+}
+
+// 站内跳转到提案详情页（详情页组件已就绪于 feat/jnsvote-proposal-detail，路由待 PR #22 合并后接线）
+function goProposalDetail(id: number) {
+  router.push(`/jnsvote/${id}`)
 }
 
 // ── 投票状态（按提案 id 隔离，避免一个 loading 挡住全部提案）──
@@ -465,7 +474,10 @@ onMounted(async () => {
   border-radius: 12px;
   padding: 16px 18px;
   background: var(--jv-bg-surface, #fff);
+  cursor: pointer;
+  transition: border-color var(--jv-duration-fast, 120ms) var(--jv-ease, ease);
 }
+.proposal-card:hover { border-color: var(--jv-border-focus, #2563eb); }
 .proposal-card.is-disabled { opacity: 0.55; }
 
 .proposal-head { margin-bottom: 12px; }
