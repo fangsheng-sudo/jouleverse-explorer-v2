@@ -214,6 +214,10 @@ const wjBalance = ref<bigint | null>(null)
 const loadingBalance = ref(true)
 const loadingWJ = ref(true)
 
+// 世代号：每次切换地址 +1，旧世代的在途响应一律丢弃，避免跨地址串数据
+let loadSeq = 0
+const isStale = (seq: number) => seq !== loadSeq
+
 const TRANSFER_SIG = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef' as `0x${string}`
 
 const transactions = ref<any[]>([])
@@ -256,41 +260,52 @@ const formatBalance = (bal: bigint | null): string => {
 
 
 const loadBalance = async () => {
+  const seq = loadSeq
+  const addr = hexAddress.value as `0x${string}`
   loadingBalance.value = true
   try {
-    balance.value = await publicClient.getBalance({ address: hexAddress.value as `0x${string}` })
-  } catch { balance.value = null }
-  finally { loadingBalance.value = false }
+    const v = await publicClient.getBalance({ address: addr })
+    if (!isStale(seq)) balance.value = v
+  } catch { if (!isStale(seq)) balance.value = null }
+  finally { if (!isStale(seq)) loadingBalance.value = false }
 }
 
 const loadWJBalance = async () => {
+  const seq = loadSeq
+  const addr = hexAddress.value as `0x${string}`
   loadingWJ.value = true
   try {
-    wjBalance.value = await publicClient.readContract({ address: WJ_ADDRESS, abi: wjABI, functionName: 'balanceOf', args: [hexAddress.value as `0x${string}`] }) as bigint
-  } catch { wjBalance.value = null }
-  finally { loadingWJ.value = false }
+    const v = await publicClient.readContract({ address: WJ_ADDRESS, abi: wjABI, functionName: 'balanceOf', args: [addr] }) as bigint
+    if (!isStale(seq)) wjBalance.value = v
+  } catch { if (!isStale(seq)) wjBalance.value = null }
+  finally { if (!isStale(seq)) loadingWJ.value = false }
 }
 
 const loadJnsName = async () => {
+  const seq = loadSeq
+  const addr = hexAddress.value as `0x${string}`
   try {
-    const name = await publicClient.readContract({ address: JNS_ADDRESS, abi: jnsABI, functionName: 'addr2name', args: [hexAddress.value as `0x${string}`] }) as string
-    jnsName.value = name || null
-  } catch { jnsName.value = null }
+    const name = await publicClient.readContract({ address: JNS_ADDRESS, abi: jnsABI, functionName: 'addr2name', args: [addr] }) as string
+    if (!isStale(seq)) jnsName.value = name || null
+  } catch { if (!isStale(seq)) jnsName.value = null }
 }
 
 const loadJnsHoldings = async () => {
+  const seq = loadSeq
+  const addr = hexAddress.value as `0x${string}`
   loadingJnsHoldings.value = true
   try {
     // multicall 聚合：balanceOf + tokenOfOwnerByIndex×10 + _allTokensName×10 → 2 次 RPC
-    const { balance, names } = await fetchJnsHoldingBatch(hexAddress.value as `0x${string}`, 0, JNS_BATCH_SIZE, true)
+    const { balance, names } = await fetchJnsHoldingBatch(addr, 0, JNS_BATCH_SIZE, true)
+    if (isStale(seq)) return
     const total = Number(balance ?? 0n)
     jnsTotal.value = total
     if (total === 0) return
     const end = Math.min(JNS_BATCH_SIZE, Math.min(total, JNS_MAX_DISPLAY))
     jnsNames.value.push(...names.slice(0, end))
     jnsLoaded.value = Math.min(end, names.length)
-  } catch { jnsTotal.value = 0 }
-  finally { loadingJnsHoldings.value = false }
+  } catch { if (!isStale(seq)) jnsTotal.value = 0 }
+  finally { if (!isStale(seq)) loadingJnsHoldings.value = false }
 }
 
 /** 跳转到 JNS 域名详情页 */
@@ -300,19 +315,23 @@ const goJnsDetail = (name: string) => {
 
 const loadMoreJns = async () => {
   if (loadingJnsHoldings.value) return
+  const seq = loadSeq
   loadingJnsHoldings.value = true
   try {
     const start = jnsLoaded.value
     const end = Math.min(start + JNS_BATCH_SIZE, Math.min(jnsTotal.value, JNS_MAX_DISPLAY))
     const { names } = await fetchJnsHoldingBatch(hexAddress.value as `0x${string}`, start, end - start, false)
-    jnsNames.value.push(...names)
-    jnsLoaded.value = Math.min(end, start + names.length)
+    if (!isStale(seq)) {
+      jnsNames.value.push(...names)
+      jnsLoaded.value = Math.min(end, start + names.length)
+    }
   } catch { }
-  finally { loadingJnsHoldings.value = false }
+  finally { if (!isStale(seq)) loadingJnsHoldings.value = false }
 }
 
 /** 获取某年中与目标地址相关的代币转账日志 */
 const loadTransactions = async (year: number) => {
+  const seq = loadSeq
   loadingTxs.value = true
   transactions.value = []
   txLogsLoaded.value = false
@@ -323,6 +342,7 @@ const loadTransactions = async (year: number) => {
     const latestBlock = await publicClient.getBlockNumber()
     const latestData = await publicClient.getBlock({ blockNumber: latestBlock })
     initTimeCache(latestBlock, Number(latestData.timestamp))
+    if (isStale(seq)) return
     availableYears.value = getAvailableYears(latestBlock)
 
     const { fromBlock, toBlock } = getYearBlockRange(year)
@@ -375,6 +395,7 @@ const loadTransactions = async (year: number) => {
     // 按区块号降序排列
     allLogs.sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber))
 
+    if (isStale(seq)) return
     totalTxs.value = allLogs.length
 
     if (allLogs.length === 0) {
@@ -405,6 +426,7 @@ const loadTransactions = async (year: number) => {
     txLogsLoaded.value = true
     txLoadError.value = false
   } catch (e) {
+    if (isStale(seq)) return
     console.error('loadTransactions error:', e)
     transactions.value = []
     txLoadError.value = true
@@ -450,11 +472,19 @@ onMounted(() => {
 // 同组件路由切换（地址页内点合约地址 / 区块页 miner / 交易页 from-to 跳转）时，
 // props.address 变化但组件实例复用，setup 只跑一次 → 必须 watch 重建数据。
 watch(() => props.address, (v) => {
-  if (initAddress(v) === false) return
+  const s = (v ?? '').trim()
+  // 同一地址的 HEX / B32 / JVA 表示互切（顶部格式切换器 router.replace 回写）：
+  // 链上数据完全一致，只是显示格式变了 → 不重载，也不重新 init（避免把 21 字符的
+  // 历史 JVA 串当无效输入打进错误态，见 jvaddress 词表缺陷）
+  if (s === b32Address.value || s === fullAddress.value) return
+  // 出错态下必须重新 init（否则「无效 → 恢复同一地址」会卡在错误页）
+  if (!error.value && s.toLowerCase() === hexAddress.value.toLowerCase()) return
+  if (initAddress(s) === false) return
   reloadAddressData()
 })
 
 function reloadAddressData() {
+  loadSeq++
   jnsName.value = null
   jnsTotal.value = 0
   jnsNames.value = []
