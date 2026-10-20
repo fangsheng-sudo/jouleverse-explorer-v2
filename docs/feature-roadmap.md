@@ -279,6 +279,20 @@ src/design-system/
 | GitHub Pages（fork） | `https://xiaopiao009.github.io/jouleverse-explorer-v2/` | ✅ 运行中 |
 | GitHub Pages（上游正式） | `https://hmisty.github.io/jouleverse-explorer-v2/` | ✅ 已配置（2026-08-11，source: explorer-v2 分支，已 built） |
 
+### 钱包交互环境域名要求
+
+涉及钱包连接、签名、转账等写操作的场景，对部署域名有硬性要求：
+
+| 场景 | 域名要求 | 说明 |
+|------|---------|------|
+| 生产环境 | **正规备案域名** + HTTPS 证书 | 禁止使用免费共享隧道域名 |
+| 真机测试 | localhost + 局域网代理（钱包 App 与开发机同网段） | 或通过正规域名完成 |
+| 纯页面预览 | 共享免费隧道可用 | 仅限无钱包交互的展示 |
+
+**为什么不能用共享免费隧道域名**：cloudflared 免费快速隧道（`*.trycloudflare.com`）、localtunnel、ngrok 免费域名等共享子域，会被 MetaMask 等钱包的安全策略标记为「高风险 / 恶意域名」，导致钱包连接、签名、转账等写操作失效。
+
+来源：PR #28（wallet injected connector）真机测试期间实测，`*.trycloudflare.com` 被 MetaMask 拦截（见 issue #34）。
+
 ---
 
 *最后更新：2026-08-11（大白 💎）*
