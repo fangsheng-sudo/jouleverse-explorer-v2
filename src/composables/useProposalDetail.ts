@@ -86,10 +86,12 @@ export function useProposalDetail(proposalId: MaybeRefOrGetter<number>) {
         return
       }
 
+      // status 判定用单调递增后的 currentBlock，与倒计时同口径；
+      // 避免节点返回旧块（blockRaw < currentBlock）时 status 与倒计时口径偏差
       let status: ProposalStatus
       if (disabled) status = 'ended'
-      else if (blockRaw < timeBegin) status = 'pending'
-      else if (blockRaw < timeEnd) status = 'active'
+      else if (currentBlock.value < timeBegin) status = 'pending'
+      else if (currentBlock.value < timeEnd) status = 'active'
       else status = 'ended'
 
       const decision = status === 'ended' && !disabled
