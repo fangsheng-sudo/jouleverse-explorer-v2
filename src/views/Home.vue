@@ -42,9 +42,9 @@
           <button @click="handleSearch" class="search-btn">搜索</button>
         </div>
         <div class="search-hints">
-          快速链接：<router-link to="/jns" class="quick-link">{{ t('navJnsQuery') }}</router-link>
+          {{ t('quickLinks') }}<router-link to="/jns" class="quick-link">{{ t('navJnsQuery') }}</router-link>
           <router-link to="/domains" class="quick-link">{{ t('navEntry') }}</router-link>
-          <router-link to="/tools" class="quick-link">工具集</router-link>
+          <router-link to="/tools" class="quick-link">{{ t('navTools') }}</router-link>
         </div>
       </div>
 

@@ -30,6 +30,8 @@ const zhHans = {
   viewDetail: '查看详情',
   navEntry: 'JNS 域名总览',
   navJnsQuery: 'JNS 域名查询',
+  navTools: '工具集',
+  quickLinks: '快速链接：',
   boundUnknownTag: '未知',
   failedHint: '{n} 条读取失败',
   newestFirst: '按注册时间从新到旧排序',

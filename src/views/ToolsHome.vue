@@ -153,16 +153,7 @@
             <span class="tool-link">进入 →</span>
           </div>
         </router-link>
-      </div>
-    </section>
 
-    <!-- 即将推出 -->
-    <section class="tools-category">
-      <h2 class="category-title">
-        <span class="category-icon">⏳</span>
-        即将推出
-      </h2>
-      <div class="tools-grid">
         <router-link to="/jnsvote" class="tool-card">
           <div class="tool-card-header">
             <h3 class="tool-card-title">
@@ -176,6 +167,16 @@
             <span class="tool-link">进入 →</span>
           </div>
         </router-link>
+      </div>
+    </section>
+
+    <!-- 即将推出 -->
+    <section class="tools-category">
+      <h2 class="category-title">
+        <span class="category-icon">⏳</span>
+        即将推出
+      </h2>
+      <div class="tools-grid">
 
         <div class="tool-card is-disabled">
           <div class="tool-card-header">

@@ -68,6 +68,17 @@ export const useWalletStore = defineStore('wallet', () => {
         address.value = accounts[0]
         isConnected.value = true
         await getBalance()
+        // 兜底补写 wagmi config.state.current：restoreConnection 走到 checkConnection
+        // 这条路径时（reconnect 两次都拿不到、但钱包侧确有授权账户），仅写 store 的
+        // isConnected/address 不够——wagmi 内部 state.current 仍为空，后续
+        // writeContract 会抛 ConnectorNotConnectedError。这里用 connect action 把
+        // 连接正式写入 state（injected 已授权时静默、不弹窗）。
+        try {
+          await wagmiConnect(config, { connector, chainId: jouleverse.id })
+        } catch {
+          // 已连接（state.current 已是本 connector）或其余失败：忽略。
+          // store 的 isConnected/address 已就绪，展示层不受影响。
+        }
       } else {
         isConnected.value = false
         address.value = null
