@@ -5,6 +5,7 @@ import { injected } from 'wagmi/connectors'
 import { getPublicClient, reconnect, connect as wagmiConnect, disconnect as wagmiDisconnect } from '@wagmi/core'
 import { createDiscreteApi } from 'naive-ui'
 import { useThemeStore } from './theme'
+import { ChainMismatchError, isChainMismatch, isUserRejected } from '../utils/wallet-errors'
 
 // Jouleverse chain config
 const jouleverse = {
@@ -163,7 +164,9 @@ export const useWalletStore = defineStore('wallet', () => {
         // restoreConnection 会因残留标记误判已连接（在错误链上显示已连接）。
         // disconnect() 移除该标记并置 disconnected，下次 connect() 会自动清除。
         await wagmiDisconnect(config, { connector }).catch(() => {})
-        throw new Error(`连接到了错误的网络 (chainId=${result.chainId})，请切换到 Jouleverse`)
+        // 用带上实际 chainId 的强类型错误向上抛：上层据此走确定性分支，
+        // 不再靠 error.message 文本判断（文案会随库升级变化，必然漏判）。
+        throw new ChainMismatchError(result.chainId, jouleverse)
       }
       if (result && result.accounts && result.accounts.length > 0) {
         address.value = result.accounts[0]
@@ -173,16 +176,14 @@ export const useWalletStore = defineStore('wallet', () => {
       }
     } catch (error) {
       console.error('Failed to connect wallet:', error)
-      // chainId 不匹配已在上面明确提示；这里补其余失败路径（用户拒绝 4001 等）的提示，
-      // 避免「连接失败无任何提示」静默
-      const msg = (error as Error)?.message ?? ''
-      if (!msg.includes('Jouleverse 网络')) {
-        const code = (error as { code?: number | string })?.code
-        if (code === 4001 || code === 'ACTION_REJECTED') {
-          message.error('已取消连接')
-        } else {
-          message.error('连接钱包失败，请重试')
-        }
+      // 分类判定全部走确定性判据：链不匹配看错误类型 + chainId 数值，
+      // 用户拒绝看 viem 的 UserRejectedRequestError 类型 / EIP-1193 码 4001。
+      if (isChainMismatch(error)) {
+        // 上面已弹过「请在钱包中切换到 Jouleverse 网络」，此处不重复提示
+      } else if (isUserRejected(error)) {
+        message.error('已取消连接')
+      } else {
+        message.error('连接钱包失败，请重试')
       }
       isConnected.value = false
       address.value = null
