@@ -49,8 +49,8 @@
               >
                 <span class="fmt-badge hex">HEX</span>
                 <span class="fmt-value">{{ hexAddress }}</span>
-                <span :id="'fmt-hint-hex'" class="sr-only">{{ FORMAT_HINTS.hex }}</span>
               </div>
+              <span :id="'fmt-hint-hex'" class="sr-only">{{ FORMAT_HINTS.hex }}</span>
               <div
                 class="format-row"
                 role="button"
@@ -64,8 +64,8 @@
               >
                 <span class="fmt-badge b32">B32</span>
                 <span class="fmt-value">{{ b32Address }}</span>
-                <span :id="'fmt-hint-b32'" class="sr-only">{{ FORMAT_HINTS.b32 }}</span>
               </div>
+              <span :id="'fmt-hint-b32'" class="sr-only">{{ FORMAT_HINTS.b32 }}</span>
               <div
                 class="format-row"
                 role="button"
@@ -79,8 +79,8 @@
               >
                 <span class="fmt-badge full">JVA</span>
                 <span class="fmt-value">{{ fullAddress }}</span>
-                <span :id="'fmt-hint-full'" class="sr-only">{{ FORMAT_HINTS.full }}</span>
               </div>
+              <span :id="'fmt-hint-full'" class="sr-only">{{ FORMAT_HINTS.full }}</span>
             </div>
           </div>
           <div v-if="jnsName" class="info-item">
