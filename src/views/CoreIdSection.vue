@@ -76,13 +76,14 @@ const { coreIds, popHistory, popHistoryTotal, popHistoryTruncated, popDisplayCou
 const coreId = computed(() => (coreIds.value.length > 0 ? coreIds.value[0].tokenId : null))
 const metadata = computed(() => (coreIds.value.length > 0 ? coreIds.value[0].metadata : null))
 
-// 签到徽章悬停提示：有效徽章显示名称，无效徽章（记录中的 Core ID 与本地址不符）
-// 额外说明为何变灰，信息价值高于统一显示同一句。
+// 签到徽章悬停提示：isValid 是「coreId 非空 且 metadata 非空 且 记录 coreId 匹配」三个条件的与，
+// false 有三种不同成因，须分别说明，否则常态场景（本地址无 Core ID 全部置灰）会误导用户。
 const popBadgeTitle = (entry: PopHistoryEntry): string => {
   const name = entry.metadata?.name || '#' + entry.tokenId.toString()
-  return entry.isValid
-    ? `签到徽章：${name}`
-    : `签到徽章：${name}（记录中的 Core ID 与本地址不符）`
+  if (entry.isValid) return `签到徽章：${name}`
+  if (!entry.metadata) return `签到徽章：${name}（徽章元数据读取失败）`
+  if (coreId.value === null) return `签到徽章：${name}（本地址未持有 Core ID）`
+  return `签到徽章：${name}（记录中的 Core ID 与本地址不符）`
 }
 
 onMounted(() => {

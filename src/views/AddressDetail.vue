@@ -20,7 +20,15 @@
         <div class="info-grid">
           <div class="info-item">
             <span class="label">地址</span>
-            <span class="value address-formats" @click="cycleFormat" :title="formatLabelTitle + '（点击切换格式）'">
+            <span
+              class="value address-formats"
+              role="button"
+              tabindex="0"
+              @click="cycleFormat"
+              :title="formatLabelTitle + '（点击切换格式）'"
+              @keydown.enter.prevent="cycleFormat"
+              @keydown.space.prevent="cycleFormat"
+            >
               <span class="format-badge">{{ formatLabel }}</span>
               {{ formatAddress(displayAddress) }}
             </span>
@@ -34,13 +42,14 @@
                 tabindex="0"
                 :class="{ active: inputFormat === 'hex' }"
                 :title="FORMAT_HINTS.hex"
-                :aria-label="FORMAT_HINTS.hex"
+                :aria-describedby="'fmt-hint-hex'"
                 @click="selectFormat('hex')"
                 @keydown.enter.prevent="selectFormat('hex')"
                 @keydown.space.prevent="selectFormat('hex')"
               >
                 <span class="fmt-badge hex">HEX</span>
                 <span class="fmt-value">{{ hexAddress }}</span>
+                <span :id="'fmt-hint-hex'" class="sr-only">{{ FORMAT_HINTS.hex }}</span>
               </div>
               <div
                 class="format-row"
@@ -48,13 +57,14 @@
                 tabindex="0"
                 :class="{ active: inputFormat === 'b32' }"
                 :title="FORMAT_HINTS.b32"
-                :aria-label="FORMAT_HINTS.b32"
+                :aria-describedby="'fmt-hint-b32'"
                 @click="selectFormat('b32')"
                 @keydown.enter.prevent="selectFormat('b32')"
                 @keydown.space.prevent="selectFormat('b32')"
               >
                 <span class="fmt-badge b32">B32</span>
                 <span class="fmt-value">{{ b32Address }}</span>
+                <span :id="'fmt-hint-b32'" class="sr-only">{{ FORMAT_HINTS.b32 }}</span>
               </div>
               <div
                 class="format-row"
@@ -62,13 +72,14 @@
                 tabindex="0"
                 :class="{ active: inputFormat === 'full' }"
                 :title="FORMAT_HINTS.full"
-                :aria-label="FORMAT_HINTS.full"
+                :aria-describedby="'fmt-hint-full'"
                 @click="selectFormat('full')"
                 @keydown.enter.prevent="selectFormat('full')"
                 @keydown.space.prevent="selectFormat('full')"
               >
                 <span class="fmt-badge full">JVA</span>
                 <span class="fmt-value">{{ fullAddress }}</span>
+                <span :id="'fmt-hint-full'" class="sr-only">{{ FORMAT_HINTS.full }}</span>
               </div>
             </div>
           </div>
@@ -517,6 +528,11 @@ function reloadAddressData() {
 /* ── Address format switcher ── */
 .address-formats { cursor: pointer; }
 
+.address-formats:focus-visible {
+  outline: 2px solid var(--jv-brand);
+  outline-offset: 2px;
+}
+
 .format-badge {
   display: inline-block;
   font-size: 0.7rem;
@@ -547,6 +563,25 @@ function reloadAddressData() {
 }
 
 .format-row:hover { background: var(--jv-bg-hover); }
+
+/* 键盘焦点：比 active 态 1px outline 更重的 2px 焦点环，避免选中行时焦点指示被 active outline 覆盖 */
+.format-row:focus-visible {
+  outline: 2px solid var(--jv-brand);
+  outline-offset: 2px;
+}
+
+/* 屏幕阅读器专属隐藏文本（aria-describedby 指向，不占视觉空间） */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 .format-row.active {
   background: var(--jv-brand-subtle);
