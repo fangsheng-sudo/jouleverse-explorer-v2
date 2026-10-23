@@ -103,6 +103,14 @@ export function useCoreId(address: string) {
       const metadata = tokenURIs[i] ? parseTokenURI(tokenURIs[i] as string) : null
       // v1: var is_valid = tokenInfo.coreId == core_id (松类型比较)；这里桥接number/bigint
       const isValid = coreId !== null && metadata !== null && BigInt(metadata.coreId ?? -1) === coreId
+      // 失效成因在加载时刻持久化（快照 coreId），避免渲染期用实时 coreId 反推导致时序错位误报
+      const invalidReason: PopHistoryEntry['invalidReason'] = isValid
+        ? null
+        : metadata === null
+          ? 'metadata'
+          : coreId === null
+            ? 'no-core-id'
+            : 'mismatch'
 
       let monthLabel: string
       if (metadata === null) {
@@ -120,7 +128,7 @@ export function useCoreId(address: string) {
         }
       }
 
-      return { tokenId, metadata, monthLabel, isValid }
+      return { tokenId, metadata, monthLabel, isValid, invalidReason }
     })
 
     // 按tokenId降序排序（最新在前），方便用户查看近期签到

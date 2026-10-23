@@ -569,6 +569,12 @@ function reloadAddressData() {
   outline: 2px solid var(--jv-brand);
   outline-offset: 2px;
 }
+/* 焦点落在选中行（active+focus 同时命中）时，保证焦点环不被 active 态 1px outline 覆盖：
+   主动升特异性，不依赖源码声明顺序 */
+.format-row.active:focus-visible {
+  outline: 2px solid var(--jv-brand);
+  outline-offset: 2px;
+}
 
 /* 屏幕阅读器专属隐藏文本（aria-describedby 指向，不占视觉空间） */
 .sr-only {

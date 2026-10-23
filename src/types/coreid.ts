@@ -23,4 +23,6 @@ export interface PopHistoryEntry {
   metadata: NFTMetadata | null
   monthLabel: string // "YY.M"，如 "26.6"
   isValid: boolean // 代打卡判断：metadata.coreId === 当前Core ID
+  /** 失效成因（isValid=false 时）：metadata=元数据读取失败 / no-core-id=本地址未持有Core ID / mismatch=记录不符 */
+  invalidReason: 'metadata' | 'no-core-id' | 'mismatch' | null
 }
