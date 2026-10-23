@@ -7,7 +7,7 @@
 
       <template v-else>
         <div class="core-id-card">
-          <img v-if="metadata?.image" :src="metadata.image" :alt="metadata?.name" class="core-id-avatar" />
+          <img v-if="metadata?.image" :src="metadata.image" :alt="metadata?.name" :title="metadata?.name || 'Core ID 头像'" class="core-id-avatar" />
           <div class="core-id-info">
             <div class="core-id-title">Core ID #{{ coreId.toString() }}</div>
             <JvStatusTag :status="metadata?.liveness ? 'active' : 'expired'" />
@@ -37,6 +37,7 @@
               :key="entry.tokenId.toString()"
               class="pop-badge"
               :class="{ invalid: !entry.isValid }"
+              :title="`签到徽章：${entry.metadata?.name || '#' + entry.tokenId.toString()}`"
             >
               <img :src="entry.metadata?.image" :alt="entry.metadata?.name" class="pop-badge-img" />
               <div class="pop-month">{{ entry.monthLabel }}</div>

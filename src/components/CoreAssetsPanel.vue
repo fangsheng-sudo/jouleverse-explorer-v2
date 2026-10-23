@@ -22,7 +22,7 @@
           :key="item.asset.key"
         >
           <div class="asset-row">
-            <span class="asset-icon" :style="iconStyle(item.asset.icon)" role="img" :aria-label="item.asset.name"></span>
+            <span class="asset-icon" :style="iconStyle(item.asset.icon)" role="img" :aria-label="item.asset.name" :title="item.asset.name"></span>
             <div class="asset-main">
               <span class="asset-name">{{ item.asset.name }}</span>
               <span class="asset-symbol muted">{{ item.asset.symbol }}</span>

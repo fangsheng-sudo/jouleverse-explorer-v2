@@ -20,7 +20,7 @@
         <div class="info-grid">
           <div class="info-item">
             <span class="label">地址</span>
-            <span class="value address-formats" @click="cycleFormat" title="点击切换格式">
+            <span class="value address-formats" @click="cycleFormat" :title="formatLabelTitle + '（点击切换格式）'">
               <span class="format-badge">{{ formatLabel }}</span>
               {{ formatAddress(displayAddress) }}
             </span>
@@ -28,15 +28,15 @@
           <div class="info-item all-formats">
             <span class="label">所有格式</span>
             <div class="format-list">
-              <div class="format-row" @click="selectFormat('hex')" :class="{ active: inputFormat === 'hex' }">
+              <div class="format-row" @click="selectFormat('hex')" :class="{ active: inputFormat === 'hex' }" title="HEX：十六进制地址（EVM 标准格式）">
                 <span class="fmt-badge hex">HEX</span>
                 <span class="fmt-value">{{ hexAddress }}</span>
               </div>
-              <div class="format-row" @click="selectFormat('b32')" :class="{ active: inputFormat === 'b32' }">
+              <div class="format-row" @click="selectFormat('b32')" :class="{ active: inputFormat === 'b32' }" title="B32：Bech32m 编码地址">
                 <span class="fmt-badge b32">B32</span>
                 <span class="fmt-value">{{ b32Address }}</span>
               </div>
-              <div class="format-row" @click="selectFormat('full')" :class="{ active: inputFormat === 'full' }">
+              <div class="format-row" @click="selectFormat('full')" :class="{ active: inputFormat === 'full' }" title="JVA：中文地址（BIP39 词表编码）">
                 <span class="fmt-badge full">JVA</span>
                 <span class="fmt-value">{{ fullAddress }}</span>
               </div>
@@ -199,6 +199,12 @@ const hasPrevYear = computed(() => availableYears.value.length > 0 && currentYea
 const hasNextYear = computed(() => availableYears.value.length > 0 && currentYear.value < availableYears.value[availableYears.value.length - 1])
 
 const formatLabel = computed(() => ({ hex: 'HEX', b32: 'B32', full: 'JVA' }[inputFormat.value]))
+
+const formatLabelTitle = computed(() => ({
+  hex: 'HEX：十六进制地址（EVM 标准格式）',
+  b32: 'B32：Bech32m 编码地址',
+  full: 'JVA：中文地址（BIP39 词表编码）',
+}[inputFormat.value]))
 
 const displayAddress = computed(() => {
   if (inputFormat.value === 'hex') return hexAddress.value
