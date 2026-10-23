@@ -37,7 +37,7 @@
               :key="entry.tokenId.toString()"
               class="pop-badge"
               :class="{ invalid: !entry.isValid }"
-              :title="`签到徽章：${entry.metadata?.name || '#' + entry.tokenId.toString()}`"
+              :title="popBadgeTitle(entry)"
             >
               <img :src="entry.metadata?.image" :alt="entry.metadata?.name" class="pop-badge-img" />
               <div class="pop-month">{{ entry.monthLabel }}</div>
@@ -62,6 +62,7 @@ import { computed, onMounted } from 'vue'
 import { useCoreId } from '../composables/useCoreId'
 import CoreIdCheckIn from './CoreIdCheckIn.vue'
 import { JvLoading, JvPageState, JvStatusTag } from '../design-system'
+import type { PopHistoryEntry } from '../types/coreid'
 
 interface Props {
   address: string
@@ -74,6 +75,15 @@ const { coreIds, popHistory, popHistoryTotal, popHistoryTruncated, popDisplayCou
 
 const coreId = computed(() => (coreIds.value.length > 0 ? coreIds.value[0].tokenId : null))
 const metadata = computed(() => (coreIds.value.length > 0 ? coreIds.value[0].metadata : null))
+
+// 签到徽章悬停提示：有效徽章显示名称，无效徽章（记录中的 Core ID 与本地址不符）
+// 额外说明为何变灰，信息价值高于统一显示同一句。
+const popBadgeTitle = (entry: PopHistoryEntry): string => {
+  const name = entry.metadata?.name || '#' + entry.tokenId.toString()
+  return entry.isValid
+    ? `签到徽章：${name}`
+    : `签到徽章：${name}（记录中的 Core ID 与本地址不符）`
+}
 
 onMounted(() => {
   load()

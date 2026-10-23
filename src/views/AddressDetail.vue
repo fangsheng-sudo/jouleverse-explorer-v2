@@ -28,15 +28,45 @@
           <div class="info-item all-formats">
             <span class="label">所有格式</span>
             <div class="format-list">
-              <div class="format-row" @click="selectFormat('hex')" :class="{ active: inputFormat === 'hex' }" title="HEX：十六进制地址（EVM 标准格式）">
+              <div
+                class="format-row"
+                role="button"
+                tabindex="0"
+                :class="{ active: inputFormat === 'hex' }"
+                :title="FORMAT_HINTS.hex"
+                :aria-label="FORMAT_HINTS.hex"
+                @click="selectFormat('hex')"
+                @keydown.enter.prevent="selectFormat('hex')"
+                @keydown.space.prevent="selectFormat('hex')"
+              >
                 <span class="fmt-badge hex">HEX</span>
                 <span class="fmt-value">{{ hexAddress }}</span>
               </div>
-              <div class="format-row" @click="selectFormat('b32')" :class="{ active: inputFormat === 'b32' }" title="B32：Bech32m 编码地址">
+              <div
+                class="format-row"
+                role="button"
+                tabindex="0"
+                :class="{ active: inputFormat === 'b32' }"
+                :title="FORMAT_HINTS.b32"
+                :aria-label="FORMAT_HINTS.b32"
+                @click="selectFormat('b32')"
+                @keydown.enter.prevent="selectFormat('b32')"
+                @keydown.space.prevent="selectFormat('b32')"
+              >
                 <span class="fmt-badge b32">B32</span>
                 <span class="fmt-value">{{ b32Address }}</span>
               </div>
-              <div class="format-row" @click="selectFormat('full')" :class="{ active: inputFormat === 'full' }" title="JVA：中文地址（BIP39 词表编码）">
+              <div
+                class="format-row"
+                role="button"
+                tabindex="0"
+                :class="{ active: inputFormat === 'full' }"
+                :title="FORMAT_HINTS.full"
+                :aria-label="FORMAT_HINTS.full"
+                @click="selectFormat('full')"
+                @keydown.enter.prevent="selectFormat('full')"
+                @keydown.space.prevent="selectFormat('full')"
+              >
                 <span class="fmt-badge full">JVA</span>
                 <span class="fmt-value">{{ fullAddress }}</span>
               </div>
@@ -200,11 +230,14 @@ const hasNextYear = computed(() => availableYears.value.length > 0 && currentYea
 
 const formatLabel = computed(() => ({ hex: 'HEX', b32: 'B32', full: 'JVA' }[inputFormat.value]))
 
-const formatLabelTitle = computed(() => ({
+// 地址格式悬停/无障碍说明：单一常量源（模板与当前格式提示共用，避免双份文案漂移）
+const FORMAT_HINTS: Record<'hex' | 'b32' | 'full', string> = {
   hex: 'HEX：十六进制地址（EVM 标准格式）',
   b32: 'B32：Bech32m 编码地址',
   full: 'JVA：中文地址（BIP39 词表编码）',
-}[inputFormat.value]))
+}
+
+const formatLabelTitle = computed(() => FORMAT_HINTS[inputFormat.value])
 
 const displayAddress = computed(() => {
   if (inputFormat.value === 'hex') return hexAddress.value
