@@ -42,7 +42,7 @@
 | 27 | JNSVote 提案详情页 | ✅ 已完成 | `JNSVoteProposalDetail.vue` | `/jnsvote/:id` 路由；组件 2026-10-17 commit 145fdbb 落地，路由接线 commit a5d3d76 于 2026-10-20 合入（已核 `git merge-base --is-ancestor a5d3d76 upstream/explorer-v2` 为真） |
 | 28 | JNS 域名总览页 | ✅ 已完成 | `JnsDomains.vue` | `/domains` 路由，域名总览 + i18n + smoke 用例（2026-10-16，commit 86d1553；2026-10-19 commit 0b4ad5c 收敛为中文单语种） |
 | 29 | JNSVote 治理端（创建提案） | ✅ 已完成 | `JNSVoteGovernancePanel.vue` + `composables/useJNSVoteGovernance.ts` | 多签签名人专属（`v-if="isSigner"`），Gnosis 2/3 多签 submit → confirm → execute 三段流程；三条安全边界（列表过滤 / RPC 前置短路 / 防造死提案）详见 §二 P3-1；PR #62，merge ac5d8ce（2026-11-03） |
-| 30 | 生态合约注册目录 | ✅ 已完成 | `ContractRegistry.vue` + `contracts/toolbox.ts` | `/contracts`；复用本地 toolboxContracts 部署清单（12 个：核心 4 / 生态 8），搜索、分类、地址复制/跳转、合约工具入口；本页零 RPC，PR #66 |
+| 30 | 生态合约注册目录 | ✅ 已完成 | `ContractRegistry.vue` + `contracts/toolbox.ts` | `/contracts`；复用本地 toolboxContracts 部署清单（12 个：核心 4 / 生态 8），搜索、分类、地址复制/跳转、合约工具入口；默认零 RPC，支持按需只读核验单个合约；目录源自 PR #66 |
 | 31 | 验证者 / 签名人目录 | ✅ 已完成 | `Validators.vue` + `utils/clique-signers.ts` | `/validators`；最新高度 + 最近 epoch（30000 块）检查点 extraData，未命中缓存时两次逻辑读取；60 秒缓存及并发合并；仅检查点快照，不重放后续投票、不验证 seal、不提供出块分布/在线状态，PR #66 |
 
 > **本表覆盖度自检（2026-11-03 更新，PR #66 审计补全）**：`src/views/` 下共 **18** 个视图，本表 #1–#31 已全部覆盖（0 漏项）。
