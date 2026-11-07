@@ -27,8 +27,8 @@ V1 工具集入口（`jscan.jnsdao.com/tools/index.html`）为卡片式布局，
 | 合约工具 | 核心合约交互工具集（部署/调用/事件查询） | `/tools/core/index.html` | ✅ 在用 | **重写迁移**（viem 实现） |
 | 合约工具 | 其他合约交互工具集（自定义 ABI） | `/tools/contractx/index.html` | ✅ 在用 | **重写迁移**，可与 core 合并为统一"合约调用工具" |
 | 空投工具 | 默克尔证明生成器（Core 空投） | `/tools/airdrop/merkle-proof-generator.html` | ✅ 在用 | **✅ 已迁移**（2026-08-05，V2 `/tools/merkle`） |
-| 即将推出 | 数据分析面板 | — | ⏳ 未实现（占位） | 按需在 V2 新建 |
-| 即将推出 | 多签钱包管理 | — | ⏳ 未实现（占位） | 按需在 V2 新建 |
+| 分析与管理 | 数据分析面板 | — | 本分支实现，待审核发布 | `/tools/analytics`，近期有界样本 |
+| 分析与管理 | 多签钱包管理 | — | 本分支实现，待审核发布 | `/tools/multisig`，经典多签已有钱包管理 |
 
 ### 2.2 其他 V1 功能页（评估是否纳入工具集入口）
 

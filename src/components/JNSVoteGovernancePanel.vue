@@ -152,7 +152,9 @@ function shortAddr(a: string): string {
 // > timeBegin 不满足），且 modify/disable/reenable 都要求 block < timeBegin，无法补救。
 // 因此在执行按钮上叠加「开始区块须晚于当前区块」校验，过期则禁用并提示。
 function isTxExpired(tx: PendingProposalTx): boolean {
-  return currentBlock.value > 0n && tx.timeBegin <= currentBlock.value
+  // timeBegin == currentBlock 时，下一块 block.number > timeBegin 即成立、其实可以投票，不应禁用；
+  // 故用 <（而非 <=）判定「已过去」。
+  return currentBlock.value > 0n && tx.timeBegin < currentBlock.value
 }
 
 // 地址 → 显示名。
@@ -246,7 +248,7 @@ watch(
           <div class="gov-tx-head">
             <span class="gov-tx-id">#{{ tx.txId }}</span>
             <NTag size="small" :type="tx.confirmed ? 'success' : 'warning'">
-              {{ tx.confirmed ? `${tx.confirmationCount}/${tx.required} 已确认` : `${tx.confirmationCount}/${tx.required} 确认中` }}
+              {{ tx.confirmationUnknown ? '确认状态未知' : (tx.confirmed ? `${tx.confirmationCount}/${tx.required} 已确认` : `${tx.confirmationCount}/${tx.required} 确认中`) }}
             </NTag>
           </div>
           <div class="gov-tx-title">{{ tx.title }}</div>
@@ -262,7 +264,7 @@ watch(
           </div>
           <div class="gov-tx-actions">
             <NButton
-              v-if="!tx.confirmed && !tx.confirmations.includes((walletStore.address || '').toLowerCase())"
+              v-if="!tx.confirmationUnknown && !tx.confirmed && !tx.confirmations.includes((walletStore.address || '').toLowerCase())"
               size="small"
               type="primary"
               ghost
@@ -273,7 +275,7 @@ watch(
               确认
             </NButton>
             <NButton
-              v-if="tx.confirmed"
+              v-if="!tx.confirmationUnknown && tx.confirmed"
               size="small"
               type="success"
               :loading="txBusyId === tx.txId"

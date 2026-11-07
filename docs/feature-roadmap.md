@@ -35,29 +35,25 @@
 | 20 | JNS 域名操作 | ✅ 已完成 | `JNSQuery.vue`（钱包操作面板） | 绑定/解绑/发送J + 钱包连接 + B32支持（2026-07-28，commit 406a0fa 实改 `src/views/JNSQuery.vue` L126-215；无独立 JNSOperations.vue） |
 | 21 | 区块列表页 | ✅ 已完成 | `Blocks.vue` | `/blocks` 路由，区块号搜索 + 刷新（2026-03-20，commit bc33ed0；首页 `Home.vue` 之外另有独立列表页） |
 | 22 | 全网签到统计页 | ✅ 已完成 | `CoreCheckinStats.vue` | `/core/checkin` 路由，Naive UI 设计系统首批页面（2026-06-27，commit f6a09ff，PR#2） |
-| 23 | 工具集入口页 | ✅ 已完成 | `ToolsHome.vue` | `/tools` 路由，卡片式分类入口，未迁移工具外链 v1（2026-08-01，commit 0325566，PR#8；「即将推出」分区仅剩数据分析面板/多签钱包管理） |
+| 23 | 工具集入口页 | ✅ 已完成 | `ToolsHome.vue` | `/tools` 路由，卡片式分类入口，未迁移工具外链 v1（2026-08-01，commit 0325566，PR#8；本分支将数据分析面板/多签管理改为可点击内页） |
 | 24 | 合约交互通用工具 | ✅ 已完成 | `ContractToolView.vue` + `contracts/toolbox.ts` | `/tools/contract/:key` 路由，toolbox 注册表驱动 **12** 个合约（core 4 / eco 8），PR#9（66aa9af）2026-08-03 + 交易监听/WS 推送 PR#10（2026-08-04） |
 | 25 | 默克尔证明生成器 | ✅ 已完成 | `MerkleProofGenerator.vue` | `/tools/merkle` 路由，OZ v1.0.8 兼容算法（viem 重写），root/proof 已对官方库验证（2026-08-05，commit 66b1417） |
 | 26 | JNSVote 治理投票（列表） | ✅ 已完成 | `JNSVote.vue` | `/jnsvote` 路由，提案列表 + SBT 徽章 + 资格校验（JTI + JNS 持仓）；2026-08-14 commit 7b1b813（PR#15）起迭代，2026-10-22 全模块收尾（详见 §二 P3-1） |
 | 27 | JNSVote 提案详情页 | ✅ 已完成 | `JNSVoteProposalDetail.vue` | `/jnsvote/:id` 路由；组件 2026-10-17 commit 145fdbb 落地，路由接线 commit a5d3d76 于 2026-10-20 合入（已核 `git merge-base --is-ancestor a5d3d76 upstream/explorer-v2` 为真） |
 | 28 | JNS 域名总览页 | ✅ 已完成 | `JnsDomains.vue` | `/domains` 路由，域名总览 + i18n + smoke 用例（2026-10-16，commit 86d1553；2026-10-19 commit 0b4ad5c 收敛为中文单语种） |
 | 29 | JNSVote 治理端（创建提案） | ✅ 已完成 | `JNSVoteGovernancePanel.vue` + `composables/useJNSVoteGovernance.ts` | 多签签名人专属（`v-if="isSigner"`），Gnosis 2/3 多签 submit → confirm → execute 三段流程；三条安全边界（列表过滤 / RPC 前置短路 / 防造死提案）详见 §二 P3-1；PR #62，merge ac5d8ce（2026-11-03） |
-| 30 | 生态合约注册目录 | ✅ 已完成 | `ContractRegistry.vue` + `contracts/toolbox.ts` | `/contracts`；复用本地 toolboxContracts 部署清单（12 个：核心 4 / 生态 8），搜索、分类、地址复制/跳转、合约工具入口；本页零 RPC，PR #66 |
+| 30 | 生态合约注册目录 | ✅ 已完成 | `ContractRegistry.vue` + `contracts/toolbox.ts` | `/contracts`；复用本地 toolboxContracts 部署清单（12 个：核心 4 / 生态 8），搜索、分类、地址复制/跳转、合约工具入口；默认零 RPC，支持按需只读核验单个合约；目录源自 PR #66 |
 | 31 | 验证者 / 签名人目录 | ✅ 已完成 | `Validators.vue` + `utils/clique-signers.ts` | `/validators`；最新高度 + 最近 epoch（30000 块）检查点 extraData，未命中缓存时两次逻辑读取；60 秒缓存及并发合并；仅检查点快照，不重放后续投票、不验证 seal、不提供出块分布/在线状态，PR #66 |
+| 32 | 近期数据分析面板 | 🚧 本分支实现，待审核发布 | `Analytics.vue` | `/tools/analytics`；12/24个区块有界样本、缓存，无全链日志扫描 |
+| 33 | 通用经典多签管理 | 🚧 本分支实现，待审核发布 | `Multisig.vue` | `/tools/multisig`；任意兼容地址、分页、审阅、发送前复核 |
+| 34 | 链上交易核验与记录导出工具 | 🚧 本分支实现，待审未上线 | `ReceiptVerifier.vue` + `services/receipt-verifier.ts` | `/tools/receipt`；最多5个只读请求；归属一致性/重组检查；机器可读快照导出；不等于支付/履约成功，详见 `receipt-verifier.md` |
+| 35 | 生态接入验收 | 🚧 本分支完成，待审未上线 | `NetworkReadiness.vue` + `services/network-readiness.ts` | `/tools/integration`；本地清单导出、最多8次只读请求、能力边界明确；详见network-readiness.md |
 
-> **本表覆盖度自检（2026-11-03 更新，PR #66 审计补全）**：`src/views/` 下共 **18** 个视图，本表 #1–#31 已全部覆盖（0 漏项）。
-> 注：#29 是组件层（`components/` + `composables/`）而非独立视图，后续模块接续表格末尾编号；并行 PR 合入时须按实际主线顺延，不保留重复编号。
+> **本表覆盖度自检（2026-11-03 更新，并行 PR #65/#66/#67/#68 合入后顺延编号）**：`src/views/` 下共 **22** 个视图，本表 #1–#35 已全部覆盖（0 漏项）。
+> 注：#29 是组件层（`components/` + `composables/`）而非独立视图，从 #36 起如再新增组件级模块可延续此编号。
 > 复算方法：
 > ```bash
-> T=$(sed -n '/^| # |/,/^> \*\*本表覆盖度/p' docs/feature-roadmap.md)
-> missing=0
-> for f in src/views/*.vue; do
->   b=$(basename "$f" .vue)
->   if ! printf '%s\n' "$T" | grep -Fq "\`$b.vue\`"; then
->     echo "MISSING $b"; missing=1
->   fi
-> done
-> test "$missing" -eq 0
+> node scripts/check-feature-roadmap.ts
 > ```
 > 新增视图必须同步加行——历史上本表在 2026-07-28 后停更近 3 个月（缺 8 个视图），
 > 而 §二 P3-1 / §五 优先级表同期一直在记 JNSVote「✅ 全部完成」，两份清单互相矛盾却无人发现。
@@ -76,7 +72,7 @@
 - **对比 v1**：v1 使用本地 Web3.js 文件 + 不做主动切链，因此正常工作。
 - **修复方案**：① 将 Web3.js 改为本地托管文件；② `wallet_addEthereumChain` 错误处理改为宽松判断（不只依赖 4902）。
 - **状态**：⏸ 待处理（记录于 2026-06-28）
-- **源码位置**：待确认（不在当前 explorer-v2 仓库内）
+- **源码位置**：候选 `i29/JVCore-CheckIn`（不在当前仓库）；2026-11-03读取正式站点入口，与候选提交 `8e30541` 的 `index.html` SHA-256逐字节一致。兼容修复在候选仓库准备；仍需教链/维护者确认正式提交与发布位置、完成欧易手机实机验收，故本项未标记已上线。
 
 #### ✅ P0-1：地址交易历史 getLogs 重构（已完成，2026-07-25）
 - **方案**：改用 `getLogs` 按年查询 Transfer 事件
@@ -257,7 +253,7 @@
 1. **`vue-tsc -b` 只走 `references`**，新增目录（如 `tests/`）不主动挂 project 就**永远假绿**。验证覆盖是否成立只能用**负向注入**（往目标文件写一行类型错误，看 `build` 是否变 EXIT 2），不能看「build 成功」就当覆盖了。
 2. **写测试必须做反证**：断言通过 ≠ 覆盖成立。绿可能来自 ①真的覆盖了 ②自己重复造了被测依赖（在 `beforeEach` 里自装 mock，spec 压根没依赖 `setup.ts`）③压根没执行到断言。唯一判定法是——**把你声称守护的那个依赖拿掉，看测试是否变红**。PR #56 第一版就是典型的假覆盖：9 条全绿，但摘掉 `setup.ts` 的 mock 后仍然 9 条全绿。
 
-**注意**：PR 分支**不触发 CI**（`deploy-pages.yml` 仅 `on.push: [feature/core-id-checkin, explorer-v2]`），PR 上 `check_runs: 0` / `commit status: pending` 是正常态，分支验证只能靠本地门禁。
+**合并请求自动验收（本分支新增，尚未上线）**：`pr-validation.yml` 对目标 `explorer-v2` 的合并请求执行路线图检查、`npm test` 与 `npm run build`；还支持合并队列与手动触发。只读权限、无部署步骤，不更改原 Pages 工作流。平台运行与必需状态检查仍待提交后由维护者确认；首次外部分支运行可能需要批准，不能把“无检查”当成通过。详见 `docs/pr-validation.md`。
 
 ### 设计系统接入
 

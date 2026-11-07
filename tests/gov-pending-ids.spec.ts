@@ -6,13 +6,15 @@ import { createProposalABI } from '../src/contracts/jnsvoteGovernance'
 const mocks = vi.hoisted(() => ({
   readContract: vi.fn(),
   multicall: vi.fn(),
+  writeContract: vi.fn(),
+  waitForTransactionReceipt: vi.fn(),
 }))
 
 vi.mock('../src/config/client', () => ({ publicClient: mocks }))
 vi.mock('../src/stores/wallet', () => ({ config: {} }))
 vi.mock('wagmi/actions', () => ({
-  writeContract: vi.fn(),
-  waitForTransactionReceipt: vi.fn(),
+  writeContract: mocks.writeContract,
+  waitForTransactionReceipt: mocks.waitForTransactionReceipt,
   switchChain: vi.fn(),
 }))
 
@@ -34,11 +36,20 @@ function proposal(id: bigint): StoredTx {
 }
 
 // 只模拟合约读取；编码/解码与 loadGovernance 的筛选、索引关联均使用真实实现。
-function arrange(count: bigint, ids: readonly bigint[], transactions = new Map<bigint, StoredTx>()) {
-  mocks.readContract.mockImplementation(async ({ functionName }: ReadCall) => {
+function arrange(
+  count: bigint,
+  ids: readonly bigint[],
+  transactions = new Map<bigint, StoredTx>(),
+  opts: { getConfirmationsFail?: boolean; isConfirmedFail?: boolean } = {},
+) {
+  mocks.readContract.mockImplementation(async ({ functionName, args }: ReadCall) => {
     if (functionName === 'isOwner') return true
     if (functionName === 'getTransactionCount') return count
     if (functionName === 'getTransactionIds') return ids
+    if (functionName === 'transactions') {
+      const id = args?.[0] as bigint
+      return transactions.get(id) ?? proposal(id)
+    }
     throw new Error(`未预期的读取：${functionName}`)
   })
   mocks.multicall.mockImplementation(async ({ contracts }: { contracts: ReadCall[] }) => {
@@ -48,8 +59,16 @@ function arrange(count: bigint, ids: readonly bigint[], transactions = new Map<b
       if (functionName === 'transactions') {
         return { status: 'success', result: transactions.get(id) ?? proposal(id) }
       }
-      if (functionName === 'isConfirmed') return { status: 'success', result: true }
-      if (functionName === 'getConfirmations') return { status: 'success', result: [SIGNER, OTHER_SIGNER] }
+      if (functionName === 'isConfirmed') {
+        return opts.isConfirmedFail
+          ? { status: 'failure' }
+          : { status: 'success', result: true }
+      }
+      if (functionName === 'getConfirmations') {
+        return opts.getConfirmationsFail
+          ? { status: 'failure' }
+          : { status: 'success', result: [SIGNER, OTHER_SIGNER] }
+      }
       throw new Error(`未预期的批量读取：${functionName}`)
     })
   })
@@ -168,5 +187,63 @@ describe('治理待执行交易编号回归', () => {
     expect(transactionReads()).toEqual([7n, 8n, 9n])
     // 7 号携带 value>0 被过滤，仅 8、9 号（正常零值提案）进入列表
     expect(governance.pendingTxs.value.map(({ txId }) => txId)).toEqual([8, 9])
+  })
+
+  it('executeTx 对非「创建提案」类交易（value>0 或非 JNSVote 目标）直接阻断，不触发链上执行', async () => {
+    const valid = proposal(5n)
+    // 5 号：非 JNSVote 目标；6 号：目标对但 value>0；7 号：目标对但 selector 错误
+    const badTxs = new Map<bigint, StoredTx>([
+      [5n, [OTHER_TARGET, 0n, valid[2], false] as StoredTx],
+      [6n, [JNSVOTE_ADDRESS, 1000000000000000000n, valid[2], false] as StoredTx],
+      [7n, [JNSVOTE_ADDRESS, 0n, '0xb760faf9', false] as StoredTx],
+    ])
+    arrange(1n, [1n], badTxs)
+    mocks.writeContract.mockResolvedValue('0xhash')
+    mocks.waitForTransactionReceipt.mockResolvedValue({ status: 'success' })
+    const governance = useJNSVoteGovernance()
+
+    await expect(governance.executeTx(5)).rejects.toThrow('不是「创建提案」')
+    await expect(governance.executeTx(6)).rejects.toThrow('不是「创建提案」')
+    await expect(governance.executeTx(7)).rejects.toThrow('不是「创建提案」')
+    // 三种非法交易均未触链上 executeTransaction
+    expect(mocks.writeContract).not.toHaveBeenCalled()
+  })
+
+  it('executeTx 对合法「创建提案」交易正常执行', async () => {
+    const valid = proposal(5n)
+    arrange(1n, [1n], new Map([[5n, [JNSVOTE_ADDRESS, 0n, valid[2], false] as StoredTx]]))
+    mocks.writeContract.mockResolvedValue('0xhash')
+    mocks.waitForTransactionReceipt.mockResolvedValue({ status: 'success' })
+    const governance = useJNSVoteGovernance()
+
+    await expect(governance.executeTx(5)).resolves.toBeUndefined()
+    expect(mocks.writeContract).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      functionName: 'executeTransaction', args: [5n],
+    }))
+  })
+
+  it('executeTx 对已执行（executed=true）的交易直接阻断，不重复触链', async () => {
+    const valid = proposal(5n)
+    // 目标/value/selector 都合法，但链上已 executed=true
+    arrange(1n, [1n], new Map([[5n, [JNSVOTE_ADDRESS, 0n, valid[2], true] as StoredTx]]))
+    mocks.writeContract.mockResolvedValue('0xhash')
+    mocks.waitForTransactionReceipt.mockResolvedValue({ status: 'success' })
+    const governance = useJNSVoteGovernance()
+
+    await expect(governance.executeTx(5)).rejects.toThrow('已被执行')
+    expect(mocks.writeContract).not.toHaveBeenCalled()
+  })
+
+  it('getConfirmations 读取失败时，交易标记为「确认状态未知」而非「零确认」', async () => {
+    arrange(1n, [0n], new Map(), { getConfirmationsFail: true })
+    const governance = useJNSVoteGovernance()
+    await governance.loadGovernance(SIGNER)
+
+    expect(governance.loadError.value).toBeNull()
+    expect(governance.pendingTxs.value[0]).toMatchObject({
+      txId: 0,
+      confirmationUnknown: true,
+      confirmed: false,
+    })
   })
 })

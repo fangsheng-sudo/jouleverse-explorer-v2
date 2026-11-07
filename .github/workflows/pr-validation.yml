@@ -1,0 +1,42 @@
+name: PR validation
+
+on:
+  pull_request:
+    branches: [explorer-v2]
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+
+# Test untrusted PR code without deployment, OIDC, secrets or write permissions.
+# Do not replace pull_request with pull_request_target.
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Default checkout is GitHub's PR merge ref, so validate the combined tree.
+      - name: Checkout proposed merge
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      # No shared cache or artifacts consumed by privileged deployment jobs.
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Check roadmap coverage
+        run: node scripts/check-feature-roadmap.ts
+      - name: Run tests
+        run: npm test
+      - name: Build with project type checking
+        run: npm run build

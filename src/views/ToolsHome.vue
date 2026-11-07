@@ -64,7 +64,7 @@
     </section>
 
     <section class="tools-category">
-      <h2 class="category-title">📚 生态目录</h2>
+      <h2 class="category-title">📚 生态目录与核验</h2>
       <div class="tools-grid">
         <router-link to="/contracts" class="tool-card">
           <h3 class="tool-card-title">生态合约注册目录</h3>
@@ -75,6 +75,16 @@
           <h3 class="tool-card-title">验证者 / 签名人目录</h3>
           <p class="tool-desc">从最近 Clique 检查点解析签名人集合，非在线状态监控。</p>
           <span class="tool-link">查看目录 →</span>
+        </router-link>
+        <router-link to="/tools/receipt" class="tool-card">
+          <h3 class="tool-card-title">交易核验与导出</h3>
+          <p class="tool-desc">核对链上交易记录的一致性，导出可供人工、业务系统和智能体复用的查询结果。</p>
+          <span class="tool-link">打开核验 →</span>
+        </router-link>
+        <router-link to="/tools/integration" class="tool-card">
+          <h3 class="tool-card-title">生态接入验收</h3>
+          <p class="tool-desc">统一接入清单、固定预算的只读能力检测与记录导出。</p>
+          <span class="tool-link">打开 →</span>
         </router-link>
       </div>
     </section>
@@ -186,41 +196,41 @@
       </div>
     </section>
 
-    <!-- 即将推出 -->
+    <!-- 分析与管理 -->
     <section class="tools-category">
       <h2 class="category-title">
-        <span class="category-icon">⏳</span>
-        即将推出
+        <span class="category-icon">📈</span>
+        分析与管理
       </h2>
       <div class="tools-grid">
 
-        <div class="tool-card is-disabled">
+        <router-link to="/tools/analytics" class="tool-card">
           <div class="tool-card-header">
             <h3 class="tool-card-title">
               <span class="tool-icon">📊</span>
               数据分析面板
             </h3>
-            <span class="tool-status status-planned">规划中</span>
+            <span class="tool-status status-migrated">已开放</span>
           </div>
-          <p class="tool-desc">Jouleverse 链上数据可视化：交易量、地址增长、合约活动等关键指标</p>
+          <p class="tool-desc">近期区块样本的交易数、活跃地址、燃料使用率与交易目标排行，不扫描全链</p>
           <div class="tool-card-footer">
-            <span class="tool-link muted">即将推出</span>
+            <span class="tool-link">打开 →</span>
           </div>
-        </div>
+        </router-link>
 
-        <div class="tool-card is-disabled">
+        <router-link to="/tools/multisig" class="tool-card">
           <div class="tool-card-header">
             <h3 class="tool-card-title">
               <span class="tool-icon">🔐</span>
               多签钱包管理
             </h3>
-            <span class="tool-status status-planned">规划中</span>
+            <span class="tool-status status-migrated">已开放</span>
           </div>
-          <p class="tool-desc">多签钱包创建、管理与交易签名专属界面</p>
+          <p class="tool-desc">输入已有经典多签地址，查看签名人、分页交易并安全审阅提交、确认与执行</p>
           <div class="tool-card-footer">
-            <span class="tool-link muted">即将推出</span>
+            <span class="tool-link">打开 →</span>
           </div>
-        </div>
+        </router-link>
       </div>
     </section>
   </div>

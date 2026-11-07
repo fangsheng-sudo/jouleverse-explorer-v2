@@ -17,7 +17,7 @@ const handleConnect = async () => {
   try {
     await walletStore.connect()
   } catch {
-    // 错误由 walletStore 内部处理，UI 通过 NMessage 展示
+    // 错误由 walletStore 记录，根节点统一展示。
   }
 }
 
@@ -102,6 +102,10 @@ onMounted(() => {
                   </button>
                 </div>
               </header>
+              <div v-if="walletStore.connectionError" class="connection-error" role="alert">
+                {{ walletStore.connectionError }}
+                <button type="button" aria-label="关闭连接提示" @click="walletStore.connectionError = ''">关闭</button>
+              </div>
 
               <!-- Main Content -->
               <main class="app-main">
@@ -114,6 +118,11 @@ onMounted(() => {
     </NLoadingBarProvider>
   </NConfigProvider>
 </template>
+
+<style scoped>
+.connection-error { margin:12px 24px; padding:12px; border:1px solid var(--jv-error); border-radius:var(--jv-radius-md); color:var(--jv-error); background:var(--jv-error-bg); }
+.connection-error button { color:inherit; background:transparent; border:0; cursor:pointer; margin-left:16px; }
+</style>
 
 <style scoped>
 .app-container {

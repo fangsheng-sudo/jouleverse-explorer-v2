@@ -16,6 +16,8 @@ import JnsDomains from '../views/JnsDomains.vue'
 const routes = [
   { path: '/contracts', name: 'contractRegistry', component: () => import('../views/ContractRegistry.vue') },
   { path: '/validators', name: 'validators', component: () => import('../views/Validators.vue') },
+  { path: '/tools/receipt', name: 'receiptVerifier', component: () => import('../views/ReceiptVerifier.vue') },
+  { path: '/tools/integration', name: 'networkReadiness', component: () => import('../views/NetworkReadiness.vue') },
   {
     path: '/',
     name: 'home',
@@ -36,6 +38,16 @@ const routes = [
     name: 'contractTool',
     component: ContractToolView,
     props: true
+  },
+  {
+    path: '/tools/analytics',
+    name: 'analytics',
+    component: () => import('../views/Analytics.vue')
+  },
+  {
+    path: '/tools/multisig',
+    name: 'multisig',
+    component: () => import('../views/Multisig.vue')
   },
   {
     path: '/tools/merkle',

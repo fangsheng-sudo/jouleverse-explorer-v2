@@ -27,6 +27,7 @@ export interface PendingProposalTx {
   destination: string
   executed: boolean
   confirmed: boolean // isConfirmed = 确认数 >= required
+  confirmationUnknown: boolean // isConfirmed / getConfirmations 读取失败时无法确定确认状态（避免误显示「确认」按钮）
   confirmationCount: number
   required: number
   confirmations: string[] // 已确认的签名人地址（小写）
@@ -159,15 +160,19 @@ export function useJNSVoteGovernance() {
       const list: PendingProposalTx[] = matched.map((m, i) => {
         const confRes = confResults[i * 2]
         const confsRes = confResults[i * 2 + 1]
-        const confirmed = confRes.result != null ? Boolean(confRes.result as boolean) : false
-        const confirmations = confsRes.result != null
-          ? (confsRes.result as readonly string[]).map((a) => a.toLowerCase())
-          : []
+        // 确认状态未知：isConfirmed 或 getConfirmations 任一读取失败，都无法判断签名人是否已确认
+        // （否则静默降级为空数组会让已确认过的签名人仍看到「确认」按钮，点了合约 revert already confirmed）
+        const confirmationUnknown = confRes.result == null || confsRes.result == null
+        const confirmed = confirmationUnknown ? false : Boolean(confRes.result as boolean)
+        const confirmations = confirmationUnknown
+          ? []
+          : (confsRes.result as readonly string[]).map((a) => a.toLowerCase())
         return {
           txId: m.id,
           destination: m.destination,
           executed: m.executed,
           confirmed,
+          confirmationUnknown,
           confirmationCount: confirmations.length,
           required: requiredNum,
           confirmations,
@@ -268,6 +273,24 @@ export function useJNSVoteGovernance() {
   // 执行交易（确认数达标后任一签名人）
   async function executeTx(txId: number): Promise<void> {
     await ensureChain()
+    // 防御深度：执行前先读该交易校验「目标 + value + selector」，不依赖列表过滤。
+    // 防止将来有人从别处拿到 txId 直接调本函数而误执行多签里积压的其它交易（如 WJ 提现）。
+    const tx = await publicClient.readContract({
+      address: JNSVOTE_MULTISIG_ADDRESS,
+      abi: multisigABI,
+      functionName: 'transactions',
+      args: [BigInt(txId)],
+    })
+    const [destination, value, data, executed] = tx as readonly [string, bigint, string, boolean]
+    if (executed) {
+      throw new Error('该交易已被执行，请刷新列表')
+    }
+    if (destination.toLowerCase() !== JNSVOTE_ADDRESS.toLowerCase() || value !== 0n) {
+      throw new Error('该交易不是「创建提案」类交易，已阻止执行')
+    }
+    if (!data || data === '0x' || data.slice(0, 10).toLowerCase() !== CREATE_PROPOSAL_SELECTOR) {
+      throw new Error('该交易不是「创建提案」类交易，已阻止执行')
+    }
     const hash = await writeContract(wagmiConfig, {
       address: JNSVOTE_MULTISIG_ADDRESS,
       abi: multisigABI,

@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { NInput, NTag } from 'naive-ui'
 import { JvHashText, JvPageState } from '../design-system'
+import ContractDeployment from '../components/ContractDeployment.vue'
 import { toolboxContracts } from '../contracts/toolbox'
 
 const search = ref('')
@@ -19,7 +20,7 @@ const count = computed(() => groups.value.reduce((sum, group) => sum + group.con
     <RouterLink to="/tools">← 工具集</RouterLink>
     <h1>生态合约注册目录</h1>
     <p>Jouleverse 主网 · 网络编号 3666 · 已登记 {{ toolboxContracts.length }} 个合约</p>
-    <p class="notice">来源：本地 toolboxContracts 部署清单。本页不查询节点，不代表链上实时验证。版本、审计记录、升级权限及停用状态尚未登记，接入前请另行核实。</p>
+    <p class="notice">来源：本地 toolboxContracts 部署清单。默认不查询节点。展开部署档案并主动点击，可比对单个合约的链上运行时代码。</p>
     <NInput v-model:value="search" clearable placeholder="搜索名称、标签或地址" aria-label="搜索合约" />
     <p aria-live="polite">找到 {{ count }} 个合约</p>
     <JvPageState v-if="!count" type="search-empty" />
@@ -31,6 +32,7 @@ const count = computed(() => groups.value.reduce((sum, group) => sum + group.con
           <NTag size="small" :bordered="false">{{ group.label }}</NTag>
           <p>{{ contract.tag }}</p>
           <JvHashText :value="contract.address" type="address" :truncate="0" />
+          <ContractDeployment :address="contract.address" />
           <RouterLink class="tool-link" :to="`/tools/contract/${contract.key}`">打开工具 →</RouterLink>
         </article>
       </div>

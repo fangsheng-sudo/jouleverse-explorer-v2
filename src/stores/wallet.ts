@@ -1,10 +1,8 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { createConfig, http } from 'wagmi'
 import { injected } from 'wagmi/connectors'
 import { getPublicClient, reconnect, connect as wagmiConnect, disconnect as wagmiDisconnect } from '@wagmi/core'
-import { createDiscreteApi } from 'naive-ui'
-import { useThemeStore } from './theme'
 import { ChainMismatchError, isChainMismatch, isUserRejected } from '../utils/wallet-errors'
 
 // Jouleverse chain config
@@ -37,15 +35,9 @@ export const config = createConfig({
 })
 
 export const useWalletStore = defineStore('wallet', () => {
-  const themeStore = useThemeStore()
-  // 组件外弹 message（连接错误等需要在 store 层提示用户的场景）；
-  // 用 computed 跟随主题，避免在模块顶层求值一次后切主题不跟随
-  const { message } = createDiscreteApi(['message'], {
-    configProviderProps: computed(() => ({
-      theme: themeStore.naiveTheme,
-      themeOverrides: themeStore.naiveThemeOverrides,
-    })),
-  })
+  // store 初始化不创建嵌套 Vue 应用，避免通知提供者注入失败阻断整个页面。
+  // 错误由应用根节点统一显示，主题沿用根节点的设计系统。
+  const connectionError = ref('')
 
   const isConnected = ref(false)
   const address = ref<string | null>(null)
@@ -150,6 +142,7 @@ export const useWalletStore = defineStore('wallet', () => {
   const connect = async () => {
     if (isConnecting.value) return
 
+    connectionError.value = ''
     isConnecting.value = true
     try {
       const connector = config.connectors[0]
@@ -169,7 +162,7 @@ export const useWalletStore = defineStore('wallet', () => {
       // UI 显示已连接，但钱包仍停在错误链上，写操作（WJ 转账 / JNSVote 投票）会在错误网络签名。
       // 这里兜底校验，不一致则明确提示用户切换，不静默吞掉。
       if (result && result.chainId !== jouleverse.id) {
-        message.error('请在钱包中切换到 Jouleverse 网络')
+        connectionError.value = '请在钱包中切换到 Jouleverse 网络'
         // 状态一致性：connector.connect() 已返回账户并写入 injected.connected 标记，
         // 但上游静默吞掉 switch 错误、钱包仍停在错误链上。若不清理，刷新页面后
         // restoreConnection 会因残留标记误判已连接（在错误链上显示已连接）。
@@ -190,11 +183,11 @@ export const useWalletStore = defineStore('wallet', () => {
       // 分类判定全部走确定性判据：链不匹配看错误类型 + chainId 数值，
       // 用户拒绝看 viem 的 UserRejectedRequestError 类型 / EIP-1193 码 4001。
       if (isChainMismatch(error)) {
-        // 上面已弹过「请在钱包中切换到 Jouleverse 网络」，此处不重复提示
+        // 保留上面的网络切换提示，不重复覆盖。
       } else if (isUserRejected(error)) {
-        message.error('已取消连接')
+        connectionError.value = '已取消连接'
       } else {
-        message.error('连接钱包失败，请重试')
+        connectionError.value = '连接钱包失败，请重试'
       }
       isConnected.value = false
       address.value = null
@@ -296,6 +289,7 @@ export const useWalletStore = defineStore('wallet', () => {
     balance,
     wjBalance,
     isConnecting,
+    connectionError,
     connect,
     disconnect,
     getBalance,
