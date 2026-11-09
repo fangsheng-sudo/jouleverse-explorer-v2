@@ -9,6 +9,7 @@ The kit reuses the chain configuration, registered contract directory, and deplo
 - Creating the kit and listing registered contracts do not make network requests.
 - Network access occurs only after an explicit verification or adapter method call.
 - Contract verification accepts a registered contract key, not an arbitrary caller-supplied address.
+- Before comparing runtime code, the verifier checks the configured network ID and the recorded baseline block hash. A mismatch stops verification.
 - Transaction receipt observation accepts a 32-byte transaction hash and delegates to a caller-provided trusted adapter.
 - Missing optional adapters fail closed with a typed error.
 - The kit does not connect wallets, sign messages, broadcast transactions, transfer assets, or settle orders.
@@ -38,11 +39,12 @@ const kit = createJouleverseKit({
 })
 ```
 
-The adapters are trusted dependencies supplied by the integrator. This facade validates the transaction-hash format but does not independently establish the adapter's authenticity, receipt correctness, or data freshness. Integrators must verify adapter provenance and preserve the returned observation metadata.
+The adapters are trusted dependencies supplied by the integrator. This facade validates the transaction-hash format but does not independently establish the adapter's authenticity, receipt correctness, or data freshness. Integrators must verify adapter provenance and preserve returned observation metadata.
 
 ## Important limitations
 
 - A matching runtime-code hash is only a match against an observed baseline; it is not source verification or a security audit.
+- A matching chain ID and baseline block hash do not prove the RPC provider is honest for later state queries. Critical applications should cross-check independent providers.
 - A successful transaction receipt does not prove token payment, order fulfillment, or settlement.
 - This module is currently imported from the repository source tree; it is not yet a separately published package with a semver compatibility guarantee.
 - Production integrations must add their own authenticated identity, rate limits, monitoring, and server-side authorization where applicable.
