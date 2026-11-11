@@ -11,7 +11,7 @@ export async function startLocalReadonlyRpc(
   const timeout = options.responseTimeoutMs ?? 1000
   if (!Number.isSafeInteger(timeout) || timeout < 1 || timeout > 5000) throw new Error('invalid-fixture-timeout')
   const requests: LocalRpcRequest[] = []
-  const allowed = new Set(['eth_chainId', 'eth_blockNumber', 'eth_getCode', 'eth_call',
+  const allowed = new Set(['eth_chainId', 'eth_blockNumber', 'eth_getCode', 'eth_call', 'eth_getBalance',
     'eth_getTransactionByHash', 'eth_getTransactionReceipt', 'eth_getBlockByNumber'])
   const server = createServer(async (req, res) => {
     if (req.method !== 'POST' || req.url !== '/') { res.writeHead(405).end(); return }
