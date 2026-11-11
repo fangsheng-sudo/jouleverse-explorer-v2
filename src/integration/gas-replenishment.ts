@@ -96,10 +96,14 @@ export async function inspectGasReplenishment(
     }
     if (releaseAmountWj > maxReleaseWj) return { status: 'over-cap', ...evidence }
 
-    const [sponsorJ, sponsorWj] = await Promise.all([
+    const [nativeBalance, wrappedBalance] = await Promise.allSettled([
       invoke(() => reader.getBalance({ address: from, blockNumber })),
       invoke(() => reader.readContract({ address: WJ_ADDRESS, abi: wjABI, functionName: 'balanceOf', args: [from], blockNumber })),
     ])
+    // Keep admission occupied until both child requests settle, even if one fails.
+    if (nativeBalance.status !== 'fulfilled' || wrappedBalance.status !== 'fulfilled') return { status: 'unavailable' }
+    const sponsorJ = nativeBalance.value
+    const sponsorWj = wrappedBalance.value
     if (!isQuantity(sponsorJ) || !isQuantity(sponsorWj)) return { status: 'unavailable' }
     if (sponsorWj < releaseAmountWj) return { status: 'insufficient-wj', ...evidence }
     if (sponsorJ < sponsorFeeAllowanceJ + sponsorReserveJ) return { status: 'insufficient-sponsor-j', ...evidence }
