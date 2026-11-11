@@ -137,10 +137,11 @@ it('并行余额查询一快失败一挂起时仍保留任务槽位', async () =
   try {
     const rpc = reader()
     let hanging = 0
+    const settle: ((balance: bigint) => void)[] = []
     rpc.getBalance.mockImplementation(async ({ address }) => {
       if (address === policy.recipient) return 0n
       hanging++
-      return new Promise<bigint>(() => {})
+      return new Promise<bigint>(resolve => { settle.push(resolve) })
     })
     rpc.readContract.mockRejectedValue(new Error('failed child request'))
     const first = inspectGasReplenishment(rpc, policy, { timeoutMs: 10 })
@@ -152,5 +153,11 @@ it('并行余额查询一快失败一挂起时仍保留任务槽位', async () =
     expect((await inspectGasReplenishment(rpc, policy)).status).toBe('busy')
     expect(hanging).toBe(2)
     expect(rpc.readContract).toHaveBeenCalledTimes(2)
+    settle.forEach(resolve => resolve(15n))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(rpc.readContract).toHaveBeenCalledTimes(2)
+    rpc.getBalance.mockImplementation(async ({ address }) => address === policy.recipient ? 0n : 15n)
+    rpc.readContract.mockResolvedValue(100n)
+    expect((await inspectGasReplenishment(rpc, policy, { timeoutMs: 10 })).status).toBe('review-required')
   } finally { vi.useRealTimers() }
 })
