@@ -131,3 +131,26 @@ it('整数越界、非法节点数据和异常均不生成可送审结果，报�
   expect((await inspectGasReplenishment(reader(), { ...policy, targetJ: 1n << 256n })).status).toBe('invalid-policy')
   expect((await inspectGasReplenishment(reader(), policy, { timeoutMs: 0 })).status).toBe('invalid-policy')
 })
+
+it('并行余额查询一快失败一挂起时仍保留任务槽位', async () => {
+  vi.useFakeTimers()
+  try {
+    const rpc = reader()
+    let hanging = 0
+    rpc.getBalance.mockImplementation(async ({ address }) => {
+      if (address === policy.recipient) return 0n
+      hanging++
+      return new Promise<bigint>(() => {})
+    })
+    rpc.readContract.mockRejectedValue(new Error('failed child request'))
+    const first = inspectGasReplenishment(rpc, policy, { timeoutMs: 10 })
+    await vi.advanceTimersByTimeAsync(10)
+    expect((await first).status).toBe('unavailable')
+    const second = inspectGasReplenishment(rpc, policy, { timeoutMs: 10 })
+    await vi.advanceTimersByTimeAsync(10)
+    expect((await second).status).toBe('unavailable')
+    expect((await inspectGasReplenishment(rpc, policy)).status).toBe('busy')
+    expect(hanging).toBe(2)
+    expect(rpc.readContract).toHaveBeenCalledTimes(2)
+  } finally { vi.useRealTimers() }
+})
