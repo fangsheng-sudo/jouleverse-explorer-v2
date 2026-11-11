@@ -99,3 +99,13 @@ it('异步响应会等待，挂起与异常被截止并脱敏，关闭操作幂�
   expect(JSON.stringify(await post('eth_getCode'))).not.toContain('private')
   await server.close(); await server.close()
 })
+
+it('手续费预检可复用余额只读方法，不需打开写接口', async () => {
+  server = await startLocalReadonlyRpc(({ method }) => {
+    if (method === 'eth_getBalance') return '0x2'
+    throw new Error('unexpected')
+  })
+  const client = createPublicClient({ transport: http(server.url, { retryCount: 0 }) })
+  expect(await client.getBalance({ address: '0x1111111111111111111111111111111111111111', blockNumber: 100n })).toBe(2n)
+  expect(server.requests).toEqual([{ method: 'eth_getBalance', params: ['0x1111111111111111111111111111111111111111', '0x64'] }])
+})
