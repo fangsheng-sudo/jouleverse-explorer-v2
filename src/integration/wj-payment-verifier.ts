@@ -73,7 +73,7 @@ export function verifyWjPayment(input: unknown, expected: WjPaymentExpectation, 
     throw new Error('付款核验条件无效：请核对交易哈希、双方地址、最小单位金额和确认门槛')
   }
   if (!record(input) || !record(input.source) || typeof input.transactionHash !== 'string' ||
-      !['success', 'not-found', 'pending', 'reverted'].includes(String(input.state))) return { status: 'invalid-observation' }
+      typeof input.state !== 'string' || !['success', 'not-found', 'pending', 'reverted'].includes(input.state)) return { status: 'invalid-observation' }
   const observation = input as unknown as PaymentReceiptObservation
   if (observation.schema !== 'jouleverse.transaction-observation/v1' ||
       observation.transactionHash.toLowerCase() !== expected.transactionHash.toLowerCase()) {
@@ -86,7 +86,7 @@ export function verifyWjPayment(input: unknown, expected: WjPaymentExpectation, 
   const observedAt = observation.source.observedAt
   const observedMs = typeof observedAt === 'string' ? Date.parse(observedAt) : NaN
   if (!Number.isFinite(observedMs) || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{3})?Z$/.test(observedAt) ||
-      observedMs > freshness.nowMs) return { status: 'invalid-observation' }
+      observedMs > freshness.nowMs || new Date(observedMs).toISOString().replace('.000Z', 'Z') !== observedAt.replace('.000Z', 'Z')) return { status: 'invalid-observation' }
   if (freshness.nowMs - observedMs > freshness.maxAgeMs) return { status: 'stale-observation' }
   if (observation.state !== 'success') return { status: observation.state }
   const inclusion = observation.inclusion
