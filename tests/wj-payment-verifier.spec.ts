@@ -62,7 +62,8 @@ it('拒绝零金额、浮点金额、自转和零确认策略', () => {
 
 
 it('未知结构、伪造状态、无效时间及过期观察不产生匹配', () => {
-  for (const input of [null, {}, { ...observation, logs: null }, { ...observation, state: 'matched' },
+  for (const input of [null, {}, { ...observation, logs: null }, { ...observation, state: 'matched' }, { ...observation, state: ['success'] },
+    { ...observation, source: { ...observation.source, observedAt: '2026-02-30T00:00:00Z' } },
     { ...observation, source: null }, { ...observation, logs: [null] },
     { ...observation, source: { ...observation.source, observedAt: 'invalid' } }]) {
     expect(verifyWjPayment(input, expected).status).toBe('invalid-observation')
