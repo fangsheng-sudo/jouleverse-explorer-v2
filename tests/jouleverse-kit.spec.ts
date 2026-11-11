@@ -3,15 +3,15 @@ import { createJouleverseKit } from '../src/integration/jouleverse-kit'
 import { toolboxContracts } from '../src/contracts/toolbox'
 import { baselineBlock } from '../src/contracts/deployment-verification'
 
-it('创建和读取目录不联网，快照修改不污染目录', () => {
+it('创建和读取目录不联网，快照为不可变隔离副本', () => {
   const getChainId = vi.fn(async () => 3666)
   const kit = createJouleverseKit({ deploymentReader: {
     getChainId, getBlockNumber: async () => 10n, getCode: async () => '0x', getBlock: async () => ({ hash: baselineBlock.hash }),
   } })
   const list = kit.listContracts()
   expect(list).toHaveLength(toolboxContracts.length)
-  list[0]!.name = '修改副本'
-  expect(kit.listContracts()[0]!.name).not.toBe('修改副本')
+  expect(Object.isFrozen(list[0])).toBe(true)
+  expect(Object.isFrozen(kit.network)).toBe(true)
   expect(getChainId).not.toHaveBeenCalled()
 })
 it('仅核验登记地址，结果可直接序列化', async () => {
