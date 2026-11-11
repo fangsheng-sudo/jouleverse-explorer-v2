@@ -10,7 +10,9 @@ it('创建和读取目录不联网，快照修改不污染目录', () => {
   } })
   const list = kit.listContracts()
   expect(list).toHaveLength(toolboxContracts.length)
-  list[0]!.name = '修改副本'
+  expect(Object.isFrozen(list)).toBe(true)
+  expect(Object.isFrozen(list[0])).toBe(true)
+  expect(Reflect.set(list[0]!, 'name', '修改副本')).toBe(false)
   expect(kit.listContracts()[0]!.name).not.toBe('修改副本')
   expect(getChainId).not.toHaveBeenCalled()
 })
@@ -162,4 +164,39 @@ it('不允许自定义读取适配器静默搭配默认核验端点', async () =
   expect(kit.capabilities.contractRead).toBe(false)
   await expect(kit.readContract('wj', 'totalSupply')).rejects.toMatchObject({ code: 'adapter-unavailable' })
   expect(readContract).not.toHaveBeenCalled()
+})
+
+it('缺少独立受信创世哈希时明确 unconfigured，零请求且不伪造信任', async () => {
+  const kit = createJouleverseKit()
+  expect(kit.network.identityPolicy).toBe('checkpoint-only')
+  expect(kit.network.genesisHash).toBeNull()
+  expect(kit.capabilities.networkIdentity).toBe(false)
+  await expect(kit.verifyNetworkIdentity()).resolves.toEqual({ status: 'unconfigured' })
+  expect(() => createJouleverseKit({}, { expectedGenesisHash: '0x1' })).toThrow('invalid-argument')
+})
+
+it('冻结的目录对象仍不受共享注册表后续修改影响', () => {
+  const kit = createJouleverseKit()
+  const contract = toolboxContracts[0]!
+  const name = contract.name
+  try { contract.name = 'changed'; expect(kit.listContracts()[0]!.name).toBe(name) }
+  finally { contract.name = name }
+})
+
+it('套件网络身份检查受统一超时控制且不会在超时后继续查区块', async () => {
+  vi.useFakeTimers()
+  try {
+    let resolveChain!: (id: number) => void
+    const getBlock = vi.fn(async () => ({ hash: baselineBlock.hash }))
+    const kit = createJouleverseKit({ deploymentReader: {
+      getChainId: () => new Promise<number>(resolve => { resolveChain = resolve }), getBlock,
+      getBlockNumber: async () => baselineBlock.number, getCode: async () => '0x',
+    } }, { timeoutMs: 50, expectedGenesisHash: `0x${'ab'.repeat(32)}` })
+    const check = expect(kit.verifyNetworkIdentity()).rejects.toMatchObject({ code: 'timeout' })
+    await vi.advanceTimersByTimeAsync(50)
+    await check
+    resolveChain(3666)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(getBlock).not.toHaveBeenCalled()
+  } finally { vi.useRealTimers() }
 })

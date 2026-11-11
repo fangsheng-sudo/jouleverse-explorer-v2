@@ -11,6 +11,8 @@ let endpoint: string
 let methods: { method: string; params: unknown[] }[] = []
 let chainId = '0xe52'
 let code = fixture.code
+const genesisHash = `0x${'ab'.repeat(32)}` as const
+let observedGenesisHash: string = genesisHash
 const height = baselineBlock.number + 1n
 const totalSupplyAbi = [{ type: 'function', name: 'totalSupply', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] }] as const
 
@@ -22,7 +24,7 @@ beforeAll(async () => {
     methods.push(rpc)
     const results: Record<string, unknown> = {
       eth_chainId: chainId,
-      eth_getBlockByNumber: { hash: baselineBlock.hash, number: '0x82fccf', transactions: [], timestamp: '0x1' },
+      eth_getBlockByNumber: { hash: rpc.params?.[0] === '0x0' ? observedGenesisHash : baselineBlock.hash, number: '0x82fccf', transactions: [], timestamp: '0x1' },
       eth_blockNumber: `0x${height.toString(16)}`,
       eth_getCode: code,
       eth_call: encodeFunctionResult({ abi: totalSupplyAbi, functionName: 'totalSupply', result: 42n }),
@@ -36,14 +38,14 @@ beforeAll(async () => {
   endpoint = `http://127.0.0.1:${address.port}`
 })
 afterAll(async () => { await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())) })
-beforeEach(() => { methods = []; chainId = '0xe52'; code = fixture.code })
+beforeEach(() => { methods = []; chainId = '0xe52'; code = fixture.code; observedGenesisHash = genesisHash })
 
-function kit() {
+function kit(expectedGenesisHash?: `0x${string}`) {
   const client = createPublicClient({ transport: http(endpoint, { retryCount: 0 }), cacheTime: 0 })
   return createJouleverseKit({
     deploymentReader: client,
     readContract: (request: ReadContractRequest) => client.readContract(request),
-  })
+  }, { expectedGenesisHash })
 }
 
 it('真实 HTTP/JSON-RPC、代码摘要核验、ABI 编解码在同一固定高度完成只读调用', async () => {
@@ -89,4 +91,29 @@ it('默认 transport 同样通过完整核验，并仅请求配置中的公共 R
     expect(urls).toHaveLength(5)
     expect(urls.every(url => url === 'https://rpc.jnsdao.com/')).toBe(true)
   } finally { vi.unstubAllGlobals() }
+})
+
+
+it('受信创世策略进入真实读取前置检查，链 ID 只请求一次', async () => {
+  expect((await kit(genesisHash).readContract('wj', 'totalSupply')).value).toBe(42n)
+  expect(methods.map(x => x.method)).toEqual(['eth_chainId', 'eth_getBlockByNumber', 'eth_getBlockByNumber', 'eth_blockNumber', 'eth_getCode', 'eth_call'])
+  expect(methods[1]!.params).toEqual(['0x0', false])
+  expect(methods[2]!.params).toEqual(['0x82fccf', false])
+})
+
+it('创世不匹配停止后续部署与合约读取', async () => {
+  observedGenesisHash = '0x' + 'cd'.repeat(32)
+  const client = kit(genesisHash)
+  expect((await client.verifyContract('wj')).status).toBe('genesis-mismatch')
+  expect(methods.map(x => x.method)).toEqual(['eth_chainId', 'eth_getBlockByNumber'])
+  methods = []
+  await expect(client.readContract('wj', 'totalSupply')).rejects.toMatchObject({ code: 'deployment-untrusted' })
+  expect(methods.map(x => x.method)).toEqual(['eth_chainId', 'eth_getBlockByNumber'])
+})
+
+it('显式创世核验仅发两次请求，报告不可改写', async () => {
+  const report = await kit(genesisHash).verifyNetworkIdentity()
+  expect(report).toMatchObject({ status: 'verified', chainId: 3666, genesisHash })
+  expect(Object.isFrozen(report)).toBe(true)
+  expect(methods.map(x => x.method)).toEqual(['eth_chainId', 'eth_getBlockByNumber'])
 })

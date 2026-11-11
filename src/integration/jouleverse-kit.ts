@@ -1,7 +1,9 @@
-import { createPublicClient, encodeFunctionData, http, type Abi, type Address } from 'viem'
+import { createPublicClient, encodeFunctionData, http, type Abi, type Address, type Hex } from 'viem'
 import { jouleverseChain } from '../config/chain'
 import { toolboxContracts } from '../contracts/toolbox'
 import { baselineBlock, getDeploymentBaseline, verifyDeployment, type DeploymentReader } from '../contracts/deployment-verification'
+
+import { verifyNetworkIdentity, type NetworkIdentityResult } from './network-identity'
 
 export const JOULEVERSE_KIT_VERSION = 1
 export type IntegrationErrorCode = 'unknown-contract' | 'invalid-transaction-hash' | 'adapter-unavailable'
@@ -33,14 +35,16 @@ export interface IntegrationAdapters<Readiness, Receipt> {
 export interface IntegrationOptions {
   /** 1..30000 ms; applies to the entire operation, including injected adapters. */
   timeoutMs?: number
+  /** Independently trusted chain specification, never learned from the tested RPC. */
+  expectedGenesisHash?: Hex
 }
 
 function contractSnapshot(contract: (typeof toolboxContracts)[number]) {
-  return {
+  return Object.freeze({
     key: contract.key, name: contract.name, category: contract.category, address: contract.address,
     chainId: jouleverseChain.id,
     observedCodeHash: getDeploymentBaseline(contract.address) ?? null,
-  }
+  })
 }
 
 /** No wallet, storage, telemetry or request is started during creation. */
@@ -49,6 +53,8 @@ export function createJouleverseKit<Readiness = never, Receipt = never>(
 ) {
   const timeoutMs = options.timeoutMs ?? 15000
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 30000) throw new IntegrationError('invalid-argument')
+  const expectedGenesisHash = options.expectedGenesisHash
+  if (expectedGenesisHash !== undefined && (typeof expectedGenesisHash !== 'string' || !/^0x[0-9a-f]{64}$/i.test(expectedGenesisHash))) throw new IntegrationError('invalid-argument')
   const { deploymentReader, readContract, checkReadiness, observeReceipt } = adapters
   // Detach the public registry's mutable objects. No ABI with write methods crosses the boundary.
   const contracts = structuredClone(toolboxContracts)
@@ -84,11 +90,12 @@ export function createJouleverseKit<Readiness = never, Receipt = never>(
       clearTimeout(timer)
     }
   }
-  const verify = (key: string, signal: AbortSignal) => {
+  const guardedReader = (signal: AbortSignal) => {
     const reader = deploymentReader ?? client()
     const check = () => { if (signal.aborted) throw new IntegrationError('timeout') }
-    return verifyDeployment(find(key).address, {
-      getChainId: async () => { check(); return reader.getChainId() },
+    let observedChainId: number | undefined
+    return {
+      getChainId: async () => { check(); return observedChainId ??= await reader.getChainId() },
       getBlock: async args => { check(); return reader.getBlock(args) },
       getBlockNumber: async () => {
         check()
@@ -101,11 +108,25 @@ export function createJouleverseKit<Readiness = never, Receipt = never>(
         // viem normalizes a valid empty `0x` response to undefined.
         return reader.getCode(args)
       },
-    })
+    } satisfies DeploymentReader
+  }
+  const identity = (reader: DeploymentReader, signal: AbortSignal): Promise<NetworkIdentityResult> =>
+    verifyNetworkIdentity(reader, { chainId: jouleverseChain.id, genesisHash: expectedGenesisHash }, signal)
+  const verify = async (key: string, signal: AbortSignal) => {
+    const reader = guardedReader(signal)
+    if (expectedGenesisHash !== undefined) {
+      const result = await identity(reader, signal)
+      if (result.status === 'wrong-chain') return { status: 'wrong-chain' } as const
+      if (result.status === 'genesis-mismatch') return { status: 'genesis-mismatch' } as const
+      if (result.status !== 'verified') return { status: 'identity-unavailable' } as const
+    }
+    return verifyDeployment(find(key).address, reader)
   }
   return Object.freeze({
     version: JOULEVERSE_KIT_VERSION,
     network: Object.freeze({
+      genesisHash: expectedGenesisHash ?? null,
+      identityPolicy: expectedGenesisHash ? 'genesis-and-checkpoint' : 'checkpoint-only',
       chainId: jouleverseChain.id, name: jouleverseChain.name,
       nativeCurrency: Object.freeze({ ...jouleverseChain.nativeCurrency }),
       rpcUrl: jouleverseChain.rpcUrls.default.http[0],
@@ -113,9 +134,13 @@ export function createJouleverseKit<Readiness = never, Receipt = never>(
       multicall3: jouleverseChain.contracts.multicall3.address,
       baseline: Object.freeze({ blockNumber: baselineBlock.number.toString(), blockHash: baselineBlock.hash }),
     }),
-    capabilities: Object.freeze({ deployment: true, contractRead: Boolean(deploymentReader) === Boolean(readContract),
+    capabilities: Object.freeze({ networkIdentity: expectedGenesisHash !== undefined, deployment: true, contractRead: Boolean(deploymentReader) === Boolean(readContract),
       readiness: Boolean(checkReadiness), receipt: Boolean(observeReceipt) }),
-    listContracts: () => contracts.map(contractSnapshot),
+    listContracts: () => Object.freeze(contracts.map(contractSnapshot)),
+    async verifyNetworkIdentity() {
+      if (expectedGenesisHash === undefined) return Object.freeze({ status: 'unconfigured' } as const)
+      return run(async signal => Object.freeze(await identity(guardedReader(signal), signal)))
+    },
     listReadMethods(key: string) {
       return find(key).abi
         .filter(item => item.type === 'function' && (item.stateMutability === 'view' || item.stateMutability === 'pure'))
@@ -125,11 +150,11 @@ export function createJouleverseKit<Readiness = never, Receipt = never>(
       const contract = find(key)
       return run(async signal => {
         const result = await verify(key, signal)
-        return {
+        return Object.freeze({
           contract: contractSnapshot(contract), status: result.status,
           blockNumber: 'blockNumber' in result ? result.blockNumber.toString() : null,
           codeHash: 'codeHash' in result ? result.codeHash : null,
-        }
+        })
       })
     },
     /** Only registered, unambiguous view/pure functions on matching observed code. */
