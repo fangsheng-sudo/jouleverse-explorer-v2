@@ -1,0 +1,36 @@
+<!doctype html><meta charset="utf-8"><title>IndexedDB inbox integration</title>
+<script type="module">
+import { openIndexedDbInbox } from '/src/integration/indexeddb-inbox.ts'
+import { receiveDelivery } from '/src/integration/delivery-inbox.ts'
+window.inboxResult = (async () => {
+  const name = 'inbox-test-' + crypto.randomUUID()
+  const event = { source: 'orders', eventId: 'event-1', payload: '{"observed":true}' }
+  const assert = (condition, label) => { if (!condition) throw new Error(label) }
+  let first, second
+  try {
+    first = await openIndexedDbInbox(name)
+    second = await openIndexedDbInbox(name)
+    const results = await Promise.all([receiveDelivery(first, event), receiveDelivery(second, event)])
+    assert(results.map(x => x.reason).sort().join() === 'duplicate,recorded', 'atomic cross-connection dedup')
+    assert((await receiveDelivery(first, { ...event, payload: 'changed' })).action === 'review', 'conflict isolation')
+    assert((await first.listPending('refunds')).length === 0, 'tenant isolation')
+    first.close(); second.close()
+    first = await openIndexedDbInbox(name)
+    assert((await first.listPending('orders')).length === 1, 'persistent reopen')
+    assert(await first.markProcessed('orders', 'event-1'), 'processing acknowledgement')
+    assert((await first.listPending('orders')).length === 0, 'processing state persistence')
+    assert((await receiveDelivery(first, event)).reason === 'duplicate', 'processed redelivery remains deduplicated')
+    assert(!(await first.markProcessed('orders', 'missing')), 'no invented event')
+    first.close()
+    assert((await receiveDelivery(first, event)).action === 'retry', 'closed storage fails safely')
+    return { passed: true, checks: 9 }
+  } finally {
+    first?.close(); second?.close()
+    await new Promise((resolve, reject) => {
+      const request = indexedDB.deleteDatabase(name)
+      request.onsuccess = resolve; request.onerror = reject
+    })
+  }
+})()
+window.inboxResult.then(value => { document.body.textContent = JSON.stringify(value) }, error => { document.body.textContent = error.message })
+</script><body>running</body>
