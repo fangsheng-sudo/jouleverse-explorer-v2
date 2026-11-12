@@ -1,0 +1,238 @@
+
+> @jouleverse/commercial-evidence-pilot@0.1.0 test
+> npm run build && node --test tests/*.test.mjs
+
+
+> @jouleverse/commercial-evidence-pilot@0.1.0 build
+> tsc -p tsconfig.json
+
+npm notice
+npm notice New major version of npm available! 10.9.9 -> 12.2.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+npm notice To update run: npm install -g npm@12.2.2
+npm notice
+TAP version 13
+# Subtest: real HTTP JSON-RPC verifies receipt and indexes without writes
+ok 1 - real HTTP JSON-RPC verifies receipt and indexes without writes
+  ---
+  duration_ms: 104.102335
+  type: 'test'
+  ...
+# Subtest: HTTP rejects wrong response IDs, JSON-RPC errors and oversized bodies
+ok 2 - HTTP rejects wrong response IDs, JSON-RPC errors and oversized bodies
+  ---
+  duration_ms: 27.295143
+  type: 'test'
+  ...
+# Subtest: non-success HTTP response cancels a continuing response body
+ok 3 - non-success HTTP response cancels a continuing response body
+  ---
+  duration_ms: 25.30795
+  type: 'test'
+  ...
+# Subtest: bounded scan, stable repeat, checkpoint resume without duplicates
+ok 4 - bounded scan, stable repeat, checkpoint resume without duplicates
+  ---
+  duration_ms: 28.036935
+  type: 'test'
+  ...
+# Subtest: duplicate RPC log positions are idempotent, conflicting positions roll back
+ok 5 - duplicate RPC log positions are idempotent, conflicting positions roll back
+  ---
+  duration_ms: 4.256689
+  type: 'test'
+  ...
+# Subtest: bounded reorg removes orphan events and replays replacement branch
+ok 6 - bounded reorg removes orphan events and replays replacement branch
+  ---
+  duration_ms: 3.890881
+  type: 'test'
+  ...
+# Subtest: deep reorg fails without mutating last snapshot
+ok 7 - deep reorg fails without mutating last snapshot
+  ---
+  duration_ms: 2.348985
+  type: 'test'
+  ...
+# Subtest: wrong log block and RPC failure cannot partially advance checkpoint
+ok 8 - wrong log block and RPC failure cannot partially advance checkpoint
+  ---
+  duration_ms: 2.374804
+  type: 'test'
+  ...
+# Subtest: checkpoint restore rejects changed profile, malformed positions and scope
+ok 9 - checkpoint restore rejects changed profile, malformed positions and scope
+  ---
+  duration_ms: 2.226956
+  type: 'test'
+  ...
+# Subtest: query output is isolated and page limits fail closed
+ok 10 - query output is isolated and page limits fail closed
+  ---
+  duration_ms: 1.736431
+  type: 'test'
+  ...
+# Subtest: overlapping sync is rejected and cancellation cannot mutate state
+ok 11 - overlapping sync is rejected and cancellation cannot mutate state
+  ---
+  duration_ms: 8.452604
+  type: 'test'
+  ...
+# Subtest: canonical digest ignores object key order and normalizes hex case
+ok 12 - canonical digest ignores object key order and normalizes hex case
+  ---
+  duration_ms: 2.750312
+  type: 'test'
+  ...
+# Subtest: rejects unknown fields, array operation, zero salt, impossible dates
+ok 13 - rejects unknown fields, array operation, zero salt, impossible dates
+  ---
+  duration_ms: 0.93398
+  type: 'test'
+  ...
+# Subtest: correction and revocation require a different predecessor
+ok 14 - correction and revocation require a different predecessor
+  ---
+  duration_ms: 0.705529
+  type: 'test'
+  ...
+# Subtest: decodes strict event ABI and rejects truncated data or extra topics
+ok 15 - decodes strict event ABI and rejects truncated data or extra topics
+  ---
+  duration_ms: 3.522446
+  type: 'test'
+  ...
+# Subtest: RPC quantities have canonical bounded representation
+ok 16 - RPC quantities have canonical bounded representation
+  ---
+  duration_ms: 0.402599
+  type: 'test'
+  ...
+# Subtest: uncancellable requests retain both slots after deadline until real settlement
+ok 17 - uncancellable requests retain both slots after deadline until real settlement
+  ---
+  duration_ms: 11.857088
+  type: 'test'
+  ...
+# Subtest: abort stops follow-up RPC even when earlier request ignores cancellation
+ok 18 - abort stops follow-up RPC even when earlier request ignores cancellation
+  ---
+  duration_ms: 3.58784
+  type: 'test'
+  ...
+# Subtest: request budget and write method blacklist are enforced
+ok 19 - request budget and write method blacklist are enforced
+  ---
+  duration_ms: 1.762209
+  type: 'test'
+  ...
+# Subtest: raw endpoint errors are sanitized and aborted entry does not call reader
+ok 20 - raw endpoint errors are sanitized and aborted entry does not call reader
+  ---
+  duration_ms: 0.624155
+  type: 'test'
+  ...
+# Subtest: HTTP transport rejects credentials, plaintext remote and invalid endpoints
+ok 21 - HTTP transport rejects credentials, plaintext remote and invalid endpoints
+  ---
+  duration_ms: 0.526242
+  type: 'test'
+  ...
+# Subtest: escaped request is closed after work completes
+ok 22 - escaped request is closed after work completes
+  ---
+  duration_ms: 0.302479
+  type: 'test'
+  ...
+# Subtest: unawaited transport still retains operation slots until underlying settlement
+ok 23 - unawaited transport still retains operation slots until underlying settlement
+  ---
+  duration_ms: 10.515681
+  type: 'test'
+  ...
+# Subtest: per-session raw request concurrency is capped even for parallel work
+ok 24 - per-session raw request concurrency is capped even for parallel work
+  ---
+  duration_ms: 0.93421
+  type: 'test'
+  ...
+# Subtest: matches only a bound canonical confirmed anchor; inclusion is explicit
+ok 25 - matches only a bound canonical confirmed anchor; inclusion is explicit
+  ---
+  duration_ms: 11.418291
+  type: 'test'
+  ...
+# Subtest: wrong chain stops before receipt or logs
+ok 26 - wrong chain stops before receipt or logs
+  ---
+  duration_ms: 3.92804
+  type: 'test'
+  ...
+# Subtest: rejects wrong application and deployment before RPC
+ok 27 - rejects wrong application and deployment before RPC
+  ---
+  duration_ms: 0.757767
+  type: 'test'
+  ...
+# Subtest: code mismatch fails closed
+ok 28 - code mismatch fails closed
+  ---
+  duration_ms: 1.429122
+  type: 'test'
+  ...
+# Subtest: insufficient depth never returns a match
+ok 29 - insufficient depth never returns a match
+  ---
+  duration_ms: 2.496743
+  type: 'test'
+  ...
+# Subtest: removed, duplicate and payload mismatch are rejected
+ok 30 - removed, duplicate and payload mismatch are rejected
+  ---
+  duration_ms: 4.509155
+  type: 'test'
+  ...
+# Subtest: changed canonical block during verification is rejected
+ok 31 - changed canonical block during verification is rejected
+  ---
+  duration_ms: 1.708769
+  type: 'test'
+  ...
+# Subtest: profile and envelope changes after dispatch cannot alter verification
+ok 32 - profile and envelope changes after dispatch cannot alter verification
+  ---
+  duration_ms: 1.386733
+  type: 'test'
+  ...
+# Subtest: head retreat cannot preserve an obsolete confirmation count
+ok 33 - head retreat cannot preserve an obsolete confirmation count
+  ---
+  duration_ms: 1.610354
+  type: 'test'
+  ...
+# Subtest: checkpoint mismatch stops before receipt
+ok 34 - checkpoint mismatch stops before receipt
+  ---
+  duration_ms: 1.011616
+  type: 'test'
+  ...
+# Subtest: failed transaction and wrong receipt identity cannot match
+ok 35 - failed transaction and wrong receipt identity cannot match
+  ---
+  duration_ms: 2.151373
+  type: 'test'
+  ...
+1..35
+# tests 35
+# suites 0
+# pass 35
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 772.603651
+npm notice
+npm notice New major version of npm available! 10.9.9 -> 12.2.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+npm notice To update run: npm install -g npm@12.2.2
+npm notice

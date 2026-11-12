@@ -1,0 +1,24 @@
+{
+  "name": "@jouleverse/commercial-evidence-pilot",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "demo": "npm run build && node examples/demo.mjs",
+    "demo:xuanlink": "npm run build && node examples/xuanlink-bridge.mjs"
+  },
+  "dependencies": {
+    "viem": "2.57.18"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.0",
+    "typescript": "5.9.3"
+  }
+}

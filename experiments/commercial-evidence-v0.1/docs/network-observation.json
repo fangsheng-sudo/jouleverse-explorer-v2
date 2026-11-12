@@ -1,0 +1,16 @@
+{
+  "scope": "single-public-RPC-observation",
+  "observedAt": "2026-11-12T03:20:38.357449+00:00",
+  "requestCount": 5,
+  "expectedChainId": 3666,
+  "trustedGenesisConfigured": false,
+  "commercialRegistryConfigured": false,
+  "status": "observed",
+  "chainId": 3666,
+  "head": 8629635,
+  "genesisHash": "0x41a05b2e16fb34338ccc180f8b87bd8c7647b3316ef2660a85678ac5c83470ad",
+  "checkpointHash": "0xfde447d13d6c229d85cbbc64c670b0cd61d57b593b2dee91b3ef5d507d6e261f",
+  "gasPriceWei": "2500000007",
+  "chainIdMatches": true,
+  "checkpointMatches": true
+}
