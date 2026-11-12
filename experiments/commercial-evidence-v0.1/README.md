@@ -42,3 +42,16 @@ build 输出 dist 中的 JS 和类型声明。demo 使用模拟RPC，演示 crea
 - docs/acceptance.md：最终门禁与未完成事项。
 
 项目 private/UNLICENSED，尚未选择对外开源许可。没有宣称海关合规、签发者认证、真实商品真实性、共识最终性或全链兼容。
+
+## 商业接入推进清单（2026-11-12）
+
+先查看 [17项能力清单](docs/readiness/capability-checklist.md)，再看 [链方确认问题单](docs/readiness/chain-decisions.md) 和 [分阶段验收](docs/readiness/acceptance-gates.md)。最新核查快照见 `docs/readiness/github-status.json`，不能用历史PR状态推断未来部署。
+
+```sh
+npm run readiness:check
+# 可选：npm run readiness:check -- /path/to/trusted-manifest.json
+```
+
+该命令只在本地编译和读取清单，不发RPC，不签名或广播。当前真实草稿缺少可信商业部署资料，预期输出 `blocked` 并以 **2** 退出；无效输入为 **1**，字段完整为 **0**。字段完整仅代表配置可用于准备只读试验，报告仍明确 `networkVerified/deploymentVerified/authorizationVerified/mainnetWriteEnabled=false`。引用URL不会被抓取或认证，不是授权、上线或安全审批证明。
+
+清单文件限64KiB；CLI从同一文件描述符检查普通文件、有界读取并关闭，拒绝FIFO等特殊文件。当前不支持代理合约语义。可信配置仍需真实链核验和人工确认来源。增量复审记录见 `docs/readiness/independent-review.md`。

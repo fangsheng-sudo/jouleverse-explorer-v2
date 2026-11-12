@@ -1,0 +1,61 @@
+{
+  "observedAt": "2026-11-12T18:15:37+08:00",
+  "timezone": "Asia/Shanghai",
+  "upstreamMain": {
+    "repository": "hmisty/jouleverse-explorer-v2",
+    "branch": "explorer-v2",
+    "head": "90b032e5fc558863885a6b6bb45e2f095bacd2ed"
+  },
+  "pullRequests": [
+    {
+      "number": 78,
+      "title": "feat(integration): 增加有界只读开发者接入套件",
+      "state": "OPEN",
+      "head": "784ca2d44e0d21bdc8d85d21e68175d09f2df3ef",
+      "url": "https://github.com/hmisty/jouleverse-explorer-v2/pull/78"
+    },
+    {
+      "number": 79,
+      "title": "feat(integration): 增加 WJ 付款结果核验器",
+      "state": "OPEN",
+      "head": "841832842007e5c7fa02c6cd0125cc8966efd2a0",
+      "url": "https://github.com/hmisty/jouleverse-explorer-v2/pull/79"
+    },
+    {
+      "number": 80,
+      "title": "feat(integration): 增加可靠交付事件收件箱",
+      "state": "OPEN",
+      "head": "d4335cd0654389b3437861352bdd2a3bdeeb58cc",
+      "url": "https://github.com/hmisty/jouleverse-explorer-v2/pull/80"
+    },
+    {
+      "number": 81,
+      "title": "feat(integration): 增加 Jouleverse 手续费补给预检",
+      "state": "OPEN",
+      "head": "eeeb314e676d00bd9e90932591784c222452ca09",
+      "url": "https://github.com/hmisty/jouleverse-explorer-v2/pull/81"
+    },
+    {
+      "number": 82,
+      "title": "feat(integration): 增加 Jouleverse 智能体授权检查",
+      "state": "OPEN",
+      "head": "40b28fe558743042e7de4c7f006868a813afe64a",
+      "url": "https://github.com/hmisty/jouleverse-explorer-v2/pull/82"
+    },
+    {
+      "number": 83,
+      "title": "feat(integration): 增加 Jouleverse 接入服务质量评估",
+      "state": "OPEN",
+      "head": "8b5f40e781749b8e49b652298dbf976f587114fa",
+      "url": "https://github.com/hmisty/jouleverse-explorer-v2/pull/83"
+    },
+    {
+      "number": 84,
+      "title": "fix(deps): 消除依赖高危漏洞（7 high + 2 moderate）",
+      "state": "OPEN",
+      "head": "6508ad5bbc709f6d011c5df4e33eb6dd8a600eba",
+      "url": "https://github.com/hmisty/jouleverse-explorer-v2/pull/84"
+    }
+  ],
+  "verificationScope": "PR state from GitHub page; refs from git ls-remote; no production deployment or latest CI outcome inferred"
+}

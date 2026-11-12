@@ -1,0 +1,64 @@
+
+> @jouleverse/commercial-evidence-pilot@0.1.0 readiness:check
+> npm run build && node scripts/check-deployment-manifest.mjs
+
+
+> @jouleverse/commercial-evidence-pilot@0.1.0 build
+> tsc -p tsconfig.json
+
+npm notice
+npm notice New major version of npm available! 10.9.9 -> 12.2.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+npm notice To update run: npm install -g npm@12.2.2
+npm notice
+{
+  "status": "blocked",
+  "environment": "mainnet",
+  "issues": [
+    {
+      "field": "deployment.registry",
+      "code": "MISSING_REGISTRY"
+    },
+    {
+      "field": "deployment.codeHash",
+      "code": "MISSING_CODE_HASH"
+    },
+    {
+      "field": "deployment.startBlock",
+      "code": "MISSING_DEPLOYMENT_HEIGHT"
+    },
+    {
+      "field": "deployment.applicationId",
+      "code": "MISSING_APPLICATION"
+    },
+    {
+      "field": "deployment.confirmations",
+      "code": "MISSING_CONFIRMATION_POLICY"
+    },
+    {
+      "field": "deployment.upgradeability",
+      "code": "MISSING_UPGRADEABILITY_POLICY"
+    },
+    {
+      "field": "references.deploymentRecord",
+      "code": "MISSING_TRUST_REFERENCE"
+    },
+    {
+      "field": "references.codeAudit",
+      "code": "MISSING_TRUST_REFERENCE"
+    },
+    {
+      "field": "references.permissionPolicy",
+      "code": "MISSING_TRUST_REFERENCE"
+    }
+  ],
+  "networkVerified": false,
+  "deploymentVerified": false,
+  "authorizationVerified": false,
+  "mainnetWriteEnabled": false
+}
+npm notice
+npm notice New major version of npm available! 10.9.9 -> 12.2.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+npm notice To update run: npm install -g npm@12.2.2
+npm notice

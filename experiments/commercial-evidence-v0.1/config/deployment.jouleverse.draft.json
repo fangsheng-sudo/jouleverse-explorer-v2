@@ -1,0 +1,25 @@
+{
+  "schema": "commercial-deployment/v1",
+  "environment": "mainnet",
+  "network": {
+    "chainId": 3666,
+    "checkpoint": {
+      "number": "8584399",
+      "hash": "0xfde447d13d6c229d85cbbc64c670b0cd61d57b593b2dee91b3ef5d507d6e261f"
+    }
+  },
+  "deployment": {
+    "registry": null,
+    "codeHash": null,
+    "startBlock": null,
+    "applicationId": null,
+    "confirmations": null,
+    "upgradeability": "unknown"
+  },
+  "references": {
+    "checkpointSource": "https://github.com/hmisty/jouleverse-explorer-v2/blob/90b032e5fc558863885a6b6bb45e2f095bacd2ed/src/contracts/deployment-verification.ts",
+    "deploymentRecord": null,
+    "codeAudit": null,
+    "permissionPolicy": null
+  }
+}

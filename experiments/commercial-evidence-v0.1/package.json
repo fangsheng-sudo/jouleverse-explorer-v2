@@ -12,7 +12,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test tests/*.test.mjs",
     "demo": "npm run build && node examples/demo.mjs",
-    "demo:xuanlink": "npm run build && node examples/xuanlink-bridge.mjs"
+    "demo:xuanlink": "npm run build && node examples/xuanlink-bridge.mjs",
+    "readiness:check": "npm run build && node scripts/check-deployment-manifest.mjs"
   },
   "dependencies": {
     "viem": "2.57.18"
