@@ -1,6 +1,6 @@
 # Jouleverse 可信商业事件接入与证据核验试点 V0.1
 
-独立 Node.js/TypeScript 库，不改 Explorer 页面和部署。面向玄联及其他商业应用，提供隐私处理后的证据协议、EVM日志核验、有界增量索引、可信快照恢复与本地联调。未部署商业锚定合约，未签名、广播或转账。
+独立 Node.js/TypeScript 库，不改 Explorer 页面和部署。面向商业应用，提供隐私处理后的证据协议、EVM日志核验、有界增量索引、可信快照恢复与本地联调。未部署商业锚定合约，未签名、广播或转账。
 
 ## 运行
 
@@ -29,13 +29,13 @@ build 输出 dist 中的 JS 和类型声明。demo 使用模拟RPC，演示 crea
 
 先由可信部署清单提供 registry、codeHash、startBlock、applicationId、confirmations；没有生产默认地址或默认代码哈希。createJouleverseProfile 可使用主线已公布历史检查点，生产方仍须确认该信任锚和部署来源。代码哈希不能代替源码审查；本期不支持代理升级语义。
 
-证据正文、产品/批次原始标识和文件保留在玄联通用底座。应用提交私有envelope，由本包生成绑定网络与部署的摘要。示例salt不具备生产隐私性；生产必须用独立安全随机数。协议不接受额外业务字段，并不意味着可以自动识别所有个人信息，调用方仍须做数据分类。
+证据正文、产品/批次原始标识和文件保留在通用可信溯源底座。应用提交私有envelope，由本包生成绑定网络与部署的摘要。示例salt不具备生产隐私性；生产必须用独立安全随机数。协议不接受额外业务字段，并不意味着可以自动识别所有个人信息，调用方仍须做数据分类。
 
 索引结果是最近一次成功同步的RPC观察缓存；sync失败后仍可查询旧结果，不应显示成实时有效状态。query偏移在重组后失效，调用方须根据sync返回的rolledBack重启分页。exportCheckpoint只供授权内部存储，restoreTrustedCheckpoint的结构校验不防整体伪造；外部必须认证来源和完整性。历史窗口外恢复的数据不会逐条重取链验证。
 
 ## 文档
 
-- docs/reuse-and-boundaries.md：与现有PR和玄联底座的关系、许可证边界。
+- docs/reuse-and-boundaries.md：与现有PR和企业底座的关系、许可证边界。
 - docs/protocol-and-contract-design.md：数据格式、隐私及待审合约方案。
 - docs/network-observation.json：本次5请求公共RPC只读观察，不是独立网络认证。
 - docs/independent-review.md：更换模型的反例审查及修复复核。
