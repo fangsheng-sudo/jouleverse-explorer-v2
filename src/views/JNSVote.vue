@@ -93,6 +93,9 @@
       </div>
     </div>
 
+    <!-- 使用指南（参与投票 + 多签创建提案 + 结果判定） -->
+    <JNSVoteGuide />
+
     <!-- 治理端（多签签名人专属：创建提案） -->
     <JNSVoteGovernancePanel />
 
@@ -253,6 +256,7 @@ import { useJNSVote, mapVoteError, SwitchChainError } from '../composables/useJN
 import type { JNSVoteProposal } from '../composables/useJNSVote'
 import { JvLoading, JvPageState, JvHashText, JvStatusTag, JvActionButton } from '../design-system'
 import JNSVoteGovernancePanel from '../components/JNSVoteGovernancePanel.vue'
+import JNSVoteGuide from '../components/JNSVoteGuide.vue'
 
 const walletStore = useWalletStore()
 const router = useRouter()
