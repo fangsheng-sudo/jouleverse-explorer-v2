@@ -90,6 +90,9 @@ const decisionRules = [
 
           <!-- 多签创建提案 -->
           <n-tab-pane name="create" tab="🛡️ 多签创建提案">
+            <div class="guide-demo">
+              🧪 <strong>试用提案（本次上线自带）</strong>：标题「是否同意本链上投票工具进行正式部署」；开始区块晚于当前区块（建议留约 1 小时缓冲 ≈ 240 块），结束区块 = 开始区块 + 约 7 天（≈ 40320 块）。由签名人按下方流程创建、普通用户试投票。
+            </div>
             <div v-if="!isSigner" class="guide-signer-tip">
               ℹ️ 当前账户不是多签签名人，无法看到治理端创建入口。创建提案仅对签名人开放；下方为完整流程说明，供了解。
             </div>
@@ -158,6 +161,17 @@ const decisionRules = [
   line-height: 1.6;
   color: var(--jv-text-secondary, #475569);
   background: var(--jv-bg-subtle, #f1f5f9);
+}
+
+.guide-demo {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--jv-text-primary, #0f172a);
+  background: var(--jv-bg-subtle, #f1f5f9);
+  border: 1px dashed var(--jv-border, #e5e5e5);
 }
 
 .guide-signer-tip {
