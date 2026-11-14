@@ -324,7 +324,7 @@ function shortCid(link: string): string {
   return clean.length > 40 ? clean.slice(0, 20) + '…' + clean.slice(-16) : clean
 }
 
-// 站内跳转到提案详情页（详情页组件已就绪于 feat/jnsvote-proposal-detail，路由待 PR #22 合并后接线）
+// 站内跳转到提案详情页（路由 /jnsvote/:id 已接线）
 function goProposalDetail(id: number) {
   router.push(`/jnsvote/${id}`)
 }

@@ -10,7 +10,7 @@ import { useWalletStore } from '../stores/wallet'
 
 const walletStore = useWalletStore()
 // 当前账户是否为多签签名人（前端只做轻量判断，不据此授权；真正权限由合约 isOwner 决定）
-// 已知签名人地址（与 JNSVoteGovernancePanel 的 SIGNER_NAMES 一致，仅用于引导高亮，非授权依据）
+// 已知签名人地址（与 JNSVoteGovernancePanel 的 SIGNER_NAMES 保持一致，仅用于引导高亮，非授权依据）
 const SIGNER_ADDRESSES = new Set([
   '0x5bf50f2931688f886f46f88d5ceede530bb92076',
   '0xe369810b1b07d0b82f702667429c3842905c14ff',
@@ -75,7 +75,7 @@ const decisionRules = [
         <n-tabs type="line" default-value="vote" class="guide-tabs">
           <!-- 参与投票 -->
           <n-tab-pane name="vote" tab="🙋 参与投票">
-            <n-steps vertical :current="1" :status="'process'" class="guide-steps">
+            <n-steps vertical :current="voteSteps.length" status="finish" class="guide-steps">
               <n-step
                 v-for="(s, i) in voteSteps"
                 :key="i"
@@ -91,9 +91,9 @@ const decisionRules = [
           <!-- 多签创建提案 -->
           <n-tab-pane name="create" tab="🛡️ 多签创建提案">
             <div v-if="!isSigner" class="guide-signer-tip">
-              ⚠️ 当前账户不是多签签名人，无法看到治理端创建入口。创建提案仅对签名人开放。
+              ℹ️ 当前账户不是多签签名人，无法看到治理端创建入口。创建提案仅对签名人开放；下方为完整流程说明，供了解。
             </div>
-            <n-steps vertical :current="1" :status="'process'" class="guide-steps">
+            <n-steps vertical :current="createSteps.length" status="finish" class="guide-steps">
               <n-step
                 v-for="(s, i) in createSteps"
                 :key="i"
@@ -108,7 +108,7 @@ const decisionRules = [
 
           <!-- 结果判定 -->
           <n-tab-pane name="decision" tab="⚖️ 结果判定">
-            <table class="guide-table">
+            <table class="guide-table" aria-label="提案结果判定规则">
               <thead>
                 <tr>
                   <th>规则</th>
@@ -166,9 +166,9 @@ const decisionRules = [
   border-radius: 8px;
   font-size: 13px;
   line-height: 1.6;
-  color: var(--jv-warning, #b45309);
-  background: var(--jv-warning-bg, #fffbeb);
-  border: 1px solid var(--jv-warning, #d97706);
+  color: var(--jv-text-secondary, #475569);
+  background: var(--jv-bg-subtle, #f1f5f9);
+  border: 1px solid var(--jv-border, #e5e5e5);
 }
 
 .guide-table {
