@@ -91,7 +91,7 @@ const decisionRules = [
           <!-- 多签创建提案 -->
           <n-tab-pane name="create" tab="🛡️ 多签创建提案">
             <div class="guide-demo">
-              🧪 <strong>试用提案（本次上线自带）</strong>：标题「是否同意本次开发的链上投票工具上链正式部署运行」；正文见 `docs/jnsvote-proposal-deploy.md`；开始区块晚于当前区块（建议留约 1 小时缓冲 ≈ 240 块），结束区块 = 开始区块 + 约 7 天（≈ 40320 块）。由签名人按下方流程创建、普通用户试投票。
+              🧪 <strong>试用提案（本次上线自带）</strong>：标题「为试用JNSVote 治理投票（链上）新功能创建一个链上测试提案，用于测试新功能」；正文见 `docs/jnsvote-proposal-deploy.md`；开始区块晚于当前区块（建议留约 1 小时缓冲 ≈ 240 块），结束区块 = 开始区块 + 约 7 天（≈ 40320 块）。由签名人按下方流程创建、普通用户试投票。
             </div>
             <div v-if="!isSigner" class="guide-signer-tip">
               ℹ️ 当前账户不是多签签名人，无法看到治理端创建入口。创建提案仅对签名人开放；下方为完整流程说明，供了解。
